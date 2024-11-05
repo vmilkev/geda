@@ -61,6 +61,7 @@ classdef MethanData < handle
                      map_dat, num_dat2, map_dat2 ) % ...... Publish report to the files
         res = adjust_skews( this, adj_table, ...
                             lim_range, lim_time ) % ....... Finds right skews estimates and correct/adjust data output respectively.
+        [ H,l ] = ssa2( this, X, L, Q )
     end
     
     % PRIVATE INTERFACE

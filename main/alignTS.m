@@ -128,10 +128,37 @@ rfirst = 1;
 
 A = lely_ts{1,1}(1:end,2);
 
+% A2 = zeros(size(A));
+% Acell = {};
+% 
+% if is_ssa % do SSA on A
+% 
+%     w_length = 4000;
+%     n_waves = floor( numel(A)/w_length ); % number of waves (sub-signals)
+% 
+%     r1 = zeros(n_waves);
+%     r2 = zeros(n_waves);
+%     r1(1) = 1;
+%     r2(1) = w_length;
+%     for ii = 2:n_waves
+%         r1(ii) = r1(ii-1) + w_length;
+%         r2(ii) = r2(ii-1) + w_length;
+%     end
+%     r2(n_waves) = numel(A);
+% 
+%     parfor ii = 1:n_waves
+%         [A0,~] = m.ssa2(A(r1(ii):r2(ii)),ssa_wnd,ssa_eigval);
+%         Acell{ii} = A0;
+%     end
+% 
+%     for ii = 1:n_waves
+%         A2( r1(ii):r2(ii) ) = Acell{ii};
+%     end
+% end
+
 if ~is_ssa
     A = (A - 0.5)*2.0; % scalling to [-1,1]
 end
-
 
 test_statistic = zeros(numel(msr_ts),1);
 
@@ -215,17 +242,13 @@ for j = 1:numel(msr_ts) % for each Sniffer data file
             B = msr_ts{j,1}(first:last,2);
         else
             B = msr_ts_noscale{j,1}(first:last,3); % No scalling
-            [B,~] = ssa2(B,ssa_wnd,ssa_eigval);
+            [B,~] = m.ssa2(B,ssa_wnd,ssa_eigval);
         end
-        
-        % --- testing new features ------------------
-%         B1 = msr_ts_noscale{j,1}(first:last,3); % No scalling
-%         [B2,~] = ssa2(B1,200,10); %B2 = (B2 - 0.5)*2.0; % scalling to [-1,1]
-        % -------------------------------------------
-    
+            
         range = numel(A(:,1))-numel(B(:,1))+1;
         
         res = zeros( range,1 );
+        res2 = zeros( range,1 );
 
         el_B = numel(B(:,1));
     
@@ -234,20 +257,12 @@ for j = 1:numel(msr_ts) % for each Sniffer data file
             res(i,1) = dot( A(i:i+el_B-1),B )/(norm(A(i:i+el_B-1))*norm(B)); % Test statistic
         end
 
-        % ----- debugging ---------
-%         if all_signals == 17
-%             figure(100);
-%             clf;
-%             hold on; plot(res./max( abs(res) ), 'r.-'), plot(res2./max(res2), 'b.-'); hold off;
-%         end
-        % -------------------------
-
-        %[~,r] = max( abs(res) ); % This is an alternative measure (though, gives weaker results): max( abs(res/trimmean(res,1) - 1.0) ); % version 1
         [~,r] = max( res ); % version 2
 
         test_statistic(j,k) = res(r,1); % test statistic
             
         lely_time = datestr( lely_ts{1,1}( r,1 ) );
+        
         snifer_time = datestr( msr_ts{j,1}(first,1) );
 
         if ( size(snifer_time,2) < 15 )
@@ -260,45 +275,11 @@ for j = 1:numel(msr_ts) % for each Sniffer data file
         
         t = string( datestr( lely_ts{1,1}( r:r+el_B-1,1 ) ) );
         id = lely_ts{1,1}( r:r+el_B-1,3 );
-        co2 = msr_ts_noscale{j,1}(first:last,3);
-%         ch4 = msr_ts_noscale{j,1}(first:last,2);
         gas = msr_ts_noscale{j,1}(first:last,2:end);
         
-        % saves some aligned sets of data: ams and corresponding emission
-        % this is just for testing, analysis etc., should not be in
-        % production
-%         switch k
-%             case 1
-%                 ams_1 = lely_ts{1,1}( r:r+el_B-1,2 ); snf_1 = co2;
-%             case 2
-%                 ams_2 = lely_ts{1,1}( r:r+el_B-1,2 ); snf_2 = co2;
-%             case 3
-%                 ams_3 = lely_ts{1,1}( r:r+el_B-1,2 ); snf_3 = co2;
-%             case 4
-%                 ams_4 = lely_ts{1,1}( r:r+el_B-1,2 ); snf_4 = co2;
-%             case 5
-%                 ams_5 = lely_ts{1,1}( r:r+el_B-1,2 ); snf_5 = co2;
-%             case 6
-%                 ams_6 = lely_ts{1,1}( r:r+el_B-1,2 ); snf_6 = co2;
-%             case 7
-%                 ams_7 = lely_ts{1,1}( r:r+el_B-1,2 ); snf_7 = co2;
-%             case 8
-%                 ams_8 = lely_ts{1,1}( r:r+el_B-1,2 ); snf_8 = co2;
-%             case 9
-%                 ams_9 = lely_ts{1,1}( r:r+el_B-1,2 ); snf_9 = co2;
-%             case 10
-%                 ams_10 = lely_ts{1,1}( r:r+el_B-1,2 ); snf_10 = co2;
-%             otherwise
-%                 save measured_data_aligned.mat ams_1 ams_2 ams_3 ams_4 ams_5 ams_6 ams_7 ams_8 ams_9 ams_10 snf_1 snf_2 snf_3 snf_4 snf_5 snf_6 snf_7 snf_8 snf_9 snf_10;
-%         end        
-
         % signal number
         signal_no = zeros( numel(B(:,1)),1 );
         signal_no(:,1) = all_signals;
-
-        %aligned = table(t,id,co2,ch4,signal_no);
-        %aligned = table( t(refine,:),id(refine,:),gas(refine,:),signal_no(refine,:) );
-        %aligned = table( t,id,gas,signal_no );
 
         write_header = true;
         if ( all_signals > 1 )
@@ -315,9 +296,7 @@ for j = 1:numel(msr_ts) % for each Sniffer data file
 
         writetable(aligned,aligned_data_file,'WriteMode','Append',...
                     'WriteVariableNames',write_header,'Delimiter',';','QuoteStrings',true);
-        
-%         res_conv_time{j,k} = lely_ts{1,1}(1:numel(res),1);
-        
+                
         skew(j,k) = seconds(diff(datetime([lely_time;snifer_time])));
 
         % save information of each alignment,
@@ -329,9 +308,6 @@ for j = 1:numel(msr_ts) % for each Sniffer data file
         adj_table(all_signals,4) = first;
         adj_table(all_signals,5) = last;
         adj_table(all_signals,6) = j;
-
-%         id( id ~= 0 ) = 1;
-%         signalqual2(j,k) = sum(id.*co2)*1000/range;
 
         all_signals = all_signals + 1;
     
@@ -350,6 +326,7 @@ end
 
 stats{1} = skew;
 stats{2} = test_statistic;
+
 % stats{2} = signal;
 % stats{3} = signalstd;
 % stats{4} = test_statistic;

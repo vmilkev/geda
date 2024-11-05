@@ -1,0 +1,353 @@
+
+clear;
+
+p_file1 = "test/param_21834.txt";
+p_file2 = "geda_param_105_v2.dat"; %                               135 sec spell exists <= good improvement
+p_file3 = "test/param_26089_2.txt"; % !!! check zeros in the output. Results are good.
+p_file4 = "test/param_33489.txt"; %                                10 sec spell exists
+p_file5 = "test/param_31563.txt"; % not enough memory
+p_file6 = "test/param_57112.txt"; % good results. !!! check zeros in the output; 11-14 sec spells exist; NOTE, good reliability detection. !Denoising improves the detection.
+p_file7 = "test/param_59551.txt"; % nice example of partly unreliable data;      184 sec spell exists. Denoising improves the detection.
+p_file8 = "test/param_63204.txt"; % good results
+p_file9 = "test/param_63625.txt"; % 1/3 of data not aligned; strange data, consider for fault detection case.
+p_file10 = "test/param_110038.txt"; %                              78-228 min spells exist <= no improvement. !!! Because the signalls are too short due to breacks.
+p_file11 = "test/param_13144.txt"; % long running ...
+p_file12 = "test/param_25184.txt"; % NOTE, good reliability detection
+p_file13 = "test/31563_first/Handling_final/param_31563F_R2.txt";
+p_file14 = "test/31563_second/Handling_final/param_31563S_R2.txt";
+p_file15 = "test/CPH/Handling_test_1day/param_MO_1day_R1.txt";
+p_file16 = "param_56614_R1.txt";
+p_file17 = "test/param_84544_R7_2023_10.txt";
+
+tic;
+main(p_file1); % run alignment
+toc
+
+%%
+[res] = read_aligned("aligned_init_sniffer_101.txt"); % check results
+
+%%
+
+gases = size(res,2);
+
+ch4 = {};
+co2 = {};
+
+get_ch4 = true;
+
+figure(3);
+
+for i_plot = 3:gases-1
+
+    i_var = res.Properties.VariableNames{i_plot};
+
+    which_gas = table2array( res(:,i_plot) );
+    
+    id = table2array(res(:,2));
+    u = unique(id); % sorted order, zero comes first
+    
+    min_val = min( which_gas(which_gas > 0.0) );
+    if (isempty(min_val))
+        break;
+    end
+
+    id( id == 0 ) = min_val;
+    
+    mean_val = mean( which_gas(which_gas > 0.0) );
+    std_val = std( which_gas(which_gas > 0.0) );
+
+    all_time = table2array( res(:,1) );
+    
+    % Scaling animals' IDs
+    % starting from 2 because the first ID is zero
+    for i = 2:size(u,1)
+        
+        j = find(id == u(i,1));
+        %id(j) = 1+i*0.005;
+        id(j) = mean_val+rand*sqrt(std_val);
+        
+        if (get_ch4)
+            ch4{i-1,1} = u(i,1);
+            co2{i-1,1} = u(i,1);
+            records = table2array( res(j,3) );
+            time = table2array( res(j,1) );
+            mask = records > 0;
+            ch4{i-1,3} = records(mask);
+            ch4{i-1,2} = time(mask);
+            
+            records = table2array( res(j,4) );
+            co2{i-1,3} = records;
+            co2{i-1,2} = time;
+        end
+
+    end
+
+    if (get_ch4)
+        get_ch4 = false;
+    end
+        
+    subplot(gases-3,1,i_plot-2);
+    plot( all_time, which_gas, 'o', all_time, id, 'o' );
+    xlabel( 'time' );
+    ylabel(strcat('gas no.',num2str(i_plot-2)));
+
+end
+
+%% TEST SSA
+t5 = duration(0,0,5); % 5 sec, knowing sampling interval
+%tdif = (co2{1, 2}(2:end)-co2{1, 2}(1:end-1))-t5;
+tdif = (ch4{1, 2}(2:end)-ch4{1, 2}(1:end-1))-t5;
+
+testdata = table2array( res(:,4));
+testdata = testdata(1:5000,1);
+
+N = 200; % The number of time 'moments' in our toy series
+N = 5000;
+
+L = 70;
+K = N - L + 1;
+
+t = (1:N)';
+F = testdata;
+
+% making Hankel matrix
+H = zeros(L,K);
+for i1 = 1:L
+    H(i1,1:K) = F( i1 : i1 + K-1 );
+end
+
+Hsqv = H*H';
+
+[U,S,V] = svd(H);
+
+% [coeff,score,latent,~,explained,mu] = pca(H);
+% pca_95 = find(cumsum(explained)>50,1); % components explain more than 95% of all variability
+% H95pca = coeff(:,1:pca_95)*coeff(:,1:pca_95)'*H;
+
+noise_edge = 90; % procent of explained_eigenvalues
+
+explained_svd = 100*diag(S.^2)./sum(diag(S.^2));
+svd_expl = find(cumsum(explained_svd)>noise_edge,1); % components explain more than 95% of all variability
+
+% Reconstructing
+RC=zeros(N,L);
+for m=1:L
+  buf = S(m,m)*U(:,m)*V(:,m)';
+  buf=buf(end:-1:1,:); % revert rows, in order to work with subdiagonals
+  for n=1:N % anti-diagonal averaging
+    ind = -(L-1)+n-1;
+    RC(n,m)=mean( diag(buf,ind) ); % Get the elements on the (N-L+1)+n subdiagonal (k=-(N-L+1)+n) of A.
+  end
+end
+
+figure(5);
+subplot(1,2,1);
+plot(explained_svd);
+title("explained_svd'");
+subplot(1,2,2);
+plot(cumsum(explained_svd));
+title("cumsum(explained_svd)'");
+
+figure(6);
+plot(t,F);
+hold on;
+for i = 1:svd_expl
+    plot(t,RC(:,i));
+end
+hold off;
+title("original (F) and components (RCi, 90 % variance) data");
+
+figure(7);
+plot(t,F);
+hold on;
+plot(t,sum(RC(:,1:4),2));
+hold off;
+title("original (F) and reconstructed (RC, using 4 components) data");
+
+w = zeros(N,1);
+for i = 1:N
+    if (i >= 1 && i <= L)
+        w(i,1) = i + 1;
+    elseif (i >= L+1 && i <= K)
+            w(i,1) = L;
+    elseif (i >= K+1 && i <= N)
+            w(i,1) = N - i;
+    end
+end
+
+W = zeros(L);
+for i = 1:L
+    for j = 1:L
+        W(i,j) = ( RC(:,i)'*(RC(:,j).*w) )/( sqrt((RC(:,i)'*(RC(:,i).*w))) * sqrt((RC(:,j)'*(RC(:,j).*w))) );
+    end
+end
+
+figure(8);
+imagesc(W);
+title("W");
+
+%% developing and testing novel features
+
+%[res] = read_aligned("aligned_init_sniffer_101.txt"); % check results
+
+close all
+
+which_gas = 3;
+id_col = 2;
+time_col = 1;
+
+max_data_num = size(res,1);
+range = 1:floor(max_data_num/3);
+
+gas = table2array(res(range,which_gas));
+id = table2array(res(range,id_col));
+t = convertTo(table2array(res(range,1)), 'posixtime');
+
+low_limit = -0.3;
+%low_limit = -0.1;
+mask = find(gas >= low_limit);
+
+high_limit = max(gas);
+
+d = [t(mask) id(mask) gas(mask)];
+
+mask = d(:,id_col) == 0;
+
+d0 = d(mask,:);
+d1 = d(~mask,:);
+
+day_in_sec = 24*60*60;
+n_days = ceil( ( d0(end, 1) - d0(1,1) ) / day_in_sec );
+wnd_hours = 6;
+wnd_len = min(wnd_hours*60*60, d0(end, 1) - d0(1,1)); % 6 hours
+len = d0(end, 1) - d0(1,1);
+time_pos  = find_pos_by_value( d0(:,1), wnd_len );
+
+n_wnd = size(time_pos,1)+1;
+n_bins = 100;
+day_periods = ceil(n_wnd/n_days);
+
+% figure(1);
+% r1 = 1;
+% r2 = 0;
+% index = reshape(1:n_wnd, n_days, day_periods).'; % allows subplots indexing by rows in each column ruther by columns within each row (default)
+% for i = 1:n_wnd-1
+%     r1 = r2 + 1;
+%     r2 = time_pos(i);
+%     subplot(day_periods, n_days, index(i));
+%     histogram(d0(r1:r2,3), n_bins);
+%     xlim([low_limit high_limit]);
+% end
+% subplot(day_periods, n_days, index(i+1));
+% histogram(d0(time_pos(end):end,3), n_bins);
+% xlim([low_limit high_limit]);
+
+r1 = 1;
+r2 = 0;
+bkg = zeros(n_wnd,2);
+for i = 1:n_wnd-1
+    r1 = r2 + 1;
+    r2 = time_pos(i);
+    [N,edges] = histcounts(d0(r1:r2,3), 'BinMethod','fd');
+    [~, idx] = max(N);
+    md = (edges(idx) + edges(idx + 1))/2;
+    bkg(i,2) = md;
+    bkg(i,1) = d0(r1,1);
+end
+[N,edges] = histcounts(d0(time_pos(end):end,3), 'BinMethod','fd');
+[~, idx] = max(N);
+md = (edges(idx) + edges(idx + 1))/2;
+bkg(end,2) = md;
+bkg(end,1) = d0(time_pos(end),1);
+
+
+% figure(2);
+% plot(bkg(:,1), bkg(:,2), '-o');
+
+figure(3)
+r1 = 1;
+r2 = 0;
+t0 = d0(1,1);
+for i = 1:n_wnd-1
+    r1 = r2 + 1;
+    r2 = time_pos(i);
+    subplot(n_days, day_periods, i);
+    plot(d0(r1:r2,1)./60-t0./60, d0(r1:r2,3), 'o','MarkerFaceColor','b','MarkerEdgeColor','b');
+    hold on
+    x = linspace(d0(r1,1)-t0, d0(r2,1)-t0);
+    y = zeros(size(x));
+    y(:) = bkg(i,2);
+    line(x./60,y,'Color','red','LineStyle','-', 'LineWidth', 2);
+    xlabel("time, min");
+    ylabel("gas, ppm %");
+end
+subplot(n_days, day_periods, i+1);
+plot(d0(time_pos(end):end,1)./60-t0./60, d0(time_pos(end):end,3), 'o','MarkerFaceColor','b','MarkerEdgeColor','b');
+hold on
+x = linspace(d0(time_pos(end),1)-t0, d0(end,1)-t0);
+y = zeros(size(x));
+y(:) = bkg(i+1,2);
+line(x./60,y,'Color','red','LineStyle','-', 'LineWidth', 2);
+xlabel("time, min");
+ylabel("gas, ppm %");
+
+% figure(4);
+% plot(d0(:, time_col), d0(:,which_gas), 'o','MarkerFaceColor','b','MarkerEdgeColor','b');
+% hold on
+% plot(d1(:, time_col), d1(:,which_gas), 'o','MarkerFaceColor','r','MarkerEdgeColor','r');
+% 
+% figure(5);
+% subplot(2,1,1);
+% plot(d0(:, time_col), d0(:,which_gas), 'o','MarkerFaceColor','b','MarkerEdgeColor','b');
+% subplot(2,1,2);
+% plot(d1(:, time_col), d1(:,which_gas), 'o','MarkerFaceColor','r','MarkerEdgeColor','r');
+
+
+%% FUNCTIONS
+
+% function [res] = read_aligned(filename, dataLines)
+% 
+%     if nargin < 2
+%         dataLines = [2, Inf];
+%     end
+% 
+%     opts = detectImportOptions(filename);
+% 
+%     % Specify range
+%     opts.DataLines = dataLines;
+% 
+%     % Specify file level properties
+%     opts.ExtraColumnsRule = "ignore";
+%     opts.EmptyLineRule = "read";
+% 
+%     opts = setvaropts(opts, opts.VariableNames{1}, "InputFormat", "dd-MMM-yyyy HH:mm:ss");
+% 
+%     % Import the data
+%     res = readtable(filename, opts);
+% 
+% end
+
+function [ pos ] = find_pos_by_value( arr, len )
+    % The aim is to find the consecutive positions (indexes)
+    % in the array 'arr' coresponded to equal split of
+    % the array by the interval of the length 'len';
+    % we start from the first position of arr (pos = 1),
+    % than looking for the index which correspond to the value
+    % next = arr(1) + len; 
+
+    i = 1;
+    p = 1;
+    next = arr(1);
+    t_pos = zeros(size(arr));
+    s = size(arr,1);
+    while p <= s
+        next = next + len;
+        p = find ( arr >= next, 1);
+        if isempty(p)
+            break;
+        end
+        t_pos(i) = p;
+        i = i + 1;
+    end
+    pos = t_pos(t_pos > 0);
+end
