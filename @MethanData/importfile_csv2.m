@@ -67,17 +67,20 @@ mesr_num( :,1 ) = datenum( dt,fmt{min_fmt} );
 %mesr_num( :,1 ) = datenum( dt ); % here we are using the default format
 
 for i_col = 3:sz2(1,2)
-
-    %i_col = i1 + 2;
     i_val = mesr{1,i_col};
     if isa(i_val, 'cell')
         val = mesr{:,i_col};
         val = strrep(val,',', '.');
         mesr_num( :,i_col-1 ) = str2double(val);
-    else
+    elseif isa(i_val, 'datetime')
+        this.make_report("dat", "importfile_csv2(): in the sniffer data file a column consists of datetime data, will be omitted. Col no.: ", i_col);
+        continue;
+    elseif isa(i_val, 'double')
         mesr_num( :,i_col-1 ) = mesr{:,i_col};
+    else
+        this.make_report("dat", "importfile_csv2(): undefined data type found in a column of the sniffer data file. Col no.: ", i_col);
+        return;
     end
-
 end
 
 % if isa(mesr{1,3}, 'cell')

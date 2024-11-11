@@ -20,11 +20,12 @@ p_file16 = "param_56614_R1.txt";
 p_file17 = "test/param_84544_R7_2023_10.txt";
 
 tic;
-main(p_file1); % run alignment
+main(p_file4); % run alignment
 toc
 
 %%
-[res] = read_aligned("aligned_init_sniffer_101.txt"); % check results
+res = read_aligned("aligned_init_sniffer_101.txt"); % check results
+%res = read_aligned("filtered_data.txt"); % check results
 
 %%
 
