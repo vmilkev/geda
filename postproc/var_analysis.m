@@ -1,13 +1,13 @@
 clear;
 close all;
 
-%make_phenotypes("aligned_init_sniffer_4.txt",4, "ids_list_sniffer_4.txt");
-make_phenotypes("aligned_init_sniffer_1.txt",4, "ids_list_sniffer_1.txt");
+make_phenotypes("aligned_init_sniffer_4.txt",4, "ids_list_sniffer_4.txt");
+%make_phenotypes("aligned_init_sniffer_1.txt",4, "ids_list_sniffer_1.txt");
 %make_phenotypes("aligned_init_sniffer_101.txt",4);
 
 %%
 
-data = import_traits("traits_gas_1_aligned_init_sniffer_1.txt");
+data = import_traits("traits_gas_1_aligned_init_sniffer_4.txt");
 
 tn = convertTo(data.time, 'posixtime');
 tn = round((tn - min(tn) + 1)./60);

@@ -180,7 +180,15 @@ for igas = (id_col+1):res_dim(1,2)-1 % loop over gas types
 
     varNames = {'time','id','trait_1','trait_2','trait_3','trait_4'};
     results = table( datetime(traits(:,1), 'convertfrom', 'posixtime'), traits(:,2), traits(:,3), traits(:,4), traits(:,5), traits(:,6),'VariableNames',varNames );
-    gas_trait_file = strcat("traits_gas_", num2str(igas-2), "_", fname);
+    
+    k = strfind(fname, '/');
+    if ~isempty(k)
+        fname2 = extractAfter(fname,k(end)+1);
+    else
+        fname2 = fname;
+    end
+
+    gas_trait_file = strcat("traits_gas_", num2str(igas-2), "_", fname2);
     writetable(results,gas_trait_file,'WriteMode','overwrite',...
             'WriteVariableNames',true,'Delimiter',';','QuoteStrings',true);
 
