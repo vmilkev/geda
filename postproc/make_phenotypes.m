@@ -40,22 +40,43 @@ if exist('filter_ids_fname','var')
     end
 end
 
-t_dif2 = data.time(2:end, 1)-data.time(1:end-1,1);
-t_mask = t_dif2 < 0;
-if sum(t_mask)/numel(t_mask) < 0.0001
-    data(t_mask,:) = [];
+data_names= data.Properties.VariableNames;
+use_time = true;
+if data_names{1} == "Var1"
+    use_time = false;
+end
+
+t_dif2 = [];
+
+if use_time
     t_dif2 = data.time(2:end, 1)-data.time(1:end-1,1);
+else
+    t_dif2 = data.Var1(2:end, 1)-data.Var1(1:end-1,1);
+end
+
+t_mask = t_dif2 < 0;
+if (sum(t_mask) > 0) && (sum(t_mask)/numel(t_mask) < 0.0001)
+    data(t_mask,:) = [];
+    if use_time
+        t_dif2 = data.time(2:end, 1)-data.time(1:end-1,1);
+    else
+        t_dif2 = data.Var1(2:end, 1)-data.Var1(1:end-1,1);
+    end
     t_mask = t_dif2 < 0;
     while sum(t_mask) > 0
         data(t_mask,:) = [];
-        t_dif2 = data.time(2:end, 1)-data.time(1:end-1,1);
+        if use_time
+            t_dif2 = data.time(2:end, 1)-data.time(1:end-1,1);
+        else
+            t_dif2 = data.Var1(2:end, 1)-data.Var1(1:end-1,1);
+        end
         t_mask = t_dif2 < 0;
         if sum(t_mask)/numel(t_mask) > 0.0001
             disp("The time in the data set is not consecutive. The data needs to be revised.");
             return;
         end
     end
-else
+elseif (sum(t_mask) > 0) && (sum(t_mask)/numel(t_mask) >= 0.0001)
     disp("The time in the data set is not consecutive. The data needs to be revised.");
     return;
 end
@@ -86,12 +107,17 @@ for igas = (id_col+1):res_dim(1,2)-1 % loop over gas types
     if std(gas) == 0
         continue;
     end
-
+    
+    mask_nan = [];
     if sum(isnan(gas)) > 0
-        continue;
+        mask_nan = (~isnan(gas));
     end
     
-    mask = find(gas >= outlier_low_limit); % mask outliers
+    mask = (gas >= outlier_low_limit); % mask outliers
+
+    if ~isempty(mask_nan)
+        mask = mask & mask_nan;
+    end
         
     d = [t(mask) id(mask) gas(mask)]; % all data without filtered outliers
     
@@ -100,7 +126,7 @@ for igas = (id_col+1):res_dim(1,2)-1 % loop over gas types
     d0 = d(mask,:); % background dataset
     d1 = d(~mask,:); % not-background dataset
 
-    clear d gas
+    clear d gas mask_nan
     
     day_in_sec = 24*60*60; % duration of one day, seconds
     n_days = ceil( ( d0(end, 1) - d0(1,1) ) / day_in_sec ); % number of days in the dataset, days
@@ -191,7 +217,6 @@ for igas = (id_col+1):res_dim(1,2)-1 % loop over gas types
     gas_trait_file = strcat("traits_gas_", num2str(igas-2), "_", fname2);
     writetable(results,gas_trait_file,'WriteMode','overwrite',...
             'WriteVariableNames',true,'Delimiter',';','QuoteStrings',true);
-
 
 end % end of for_loop ove gas types
 

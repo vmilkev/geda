@@ -1,15 +1,91 @@
 clear;
 close all;
 
-make_phenotypes("aligned_init_sniffer_4.txt",4, "ids_list_sniffer_4.txt");
+%make_phenotypes("aligned_init_sniffer_4.txt",4, "ids_list_sniffer_4.txt");
+%make_phenotypes("aligned_init_sniffer_2.txt", 4, "ids_list_sniffer_2.txt");
+make_phenotypes("aligned_rlb_sniffer_4.txt",4);
 %make_phenotypes("aligned_init_sniffer_1.txt",4, "ids_list_sniffer_1.txt");
 %make_phenotypes("aligned_init_sniffer_101.txt",4);
 
 %%
+device = ["1" "2" "3" "4"];
+%device = ["1" "2"];
+%device = ["3" "4"];
+gas = "1";
+type = "rlb";
+%type = "init";
 
-data = import_traits("traits_gas_1_aligned_init_sniffer_4.txt");
+files = {};
+template = ["traits_gas_" "_aligned_" "_sniffer_" ".txt"];
+for i = 1:size(device,2)
+    files{i} = strcat(template(1), gas, template(2), type, template(3),device(i),template(4));
+end
 
-tn = convertTo(data.time, 'posixtime');
+tn = [];
+idn = [];
+obs = [];
+dev = [];
+u_ids = {};
+
+for i = 1:size(device,2)
+    data = import_traits(files{i});
+    tn_ = convertTo(data.time, 'posixtime');   
+    idn_ = data.id;
+
+    u_ids{i} = unique(idn_);
+    
+    dev_ = zeros(size(tn_));
+    dev_(:,1) = str2num(device(i));
+    
+    disp(["Unique ids:" num2str(numel(unique(idn_)))]);
+    
+    % observations
+    obs1 = data.trait_1;
+    obs2 = data.trait_2;
+    obs3 = data.trait_3;
+    obs4 = data.trait_4;
+    obs_ = [obs1, obs2, obs3, obs4];
+
+    % -----------------------------
+    % remove outlier    
+    % obs(66, :) = 0;
+    % mask = obs(:, 1) > 0;
+    % obs = obs(mask,:);
+    % tn = tn(mask,:);
+    % tc = tc(mask,:);
+    % idn = idn(mask,:);
+    % -----------------------------
+
+    tn = [tn; tn_];
+    idn = [idn; idn_];
+    obs = [obs; obs_];
+    dev = [dev; dev_];
+end
+
+disp(["Overall (combined) unique ids:" num2str(numel(unique(idn)))]);
+
+% find ids common to all datasets
+% u = unique(idn);
+% common_ids = zeros(size(u));
+% for i = 1:size(u,1)
+%     i_id = u(i);
+%     is_comm = ismember(i_id, u_ids{1});
+%     for j = 2:2 %size(u_ids,2)
+%         is_comm2 = ismember(i_id, u_ids{j});
+%         is_comm = is_comm & is_comm2;
+%     end
+%     if is_comm
+%         common_ids(i,1) = i_id;
+%     end
+% end
+% mask = find(common_ids ~= 0);
+% common_ids = common_ids(mask);
+% mask = idn == common_ids(1,1);
+% for i = 2:size(common_ids,1)
+%     mask2 = idn == common_ids(i,1);
+%     mask = mask + mask2;
+% end
+
 tn = round((tn - min(tn) + 1)./60);
 
 tc = zeros( size(tn) );
@@ -21,35 +97,12 @@ for i = 1:size(tn,1)
     tc(i,1) = rel_time + 1;
 end
 
-% IDs
-idn = data.id;
+tb = table(tn, tc, dev, idn, obs(:,1), obs(:,2), obs(:,3), obs(:,4), 'VariableNames',{'time', 'period', 'device', 'id', 'obs1', 'obs2', 'obs3', 'obs4'});
 
-u = unique(idn);
-disp(["Unique ids:" num2str(numel(u))]);
-
-% observations
-obs1 = data.trait_1;
-obs2 = data.trait_2;
-obs3 = data.trait_3;
-obs4 = data.trait_4;
-obs = [obs1, obs2, obs3, obs4];
-% -----------------------------
-% remove outlier
-
-% obs(66, :) = 0;
-% mask = obs(:, 1) > 0;
-% obs = obs(mask,:);
-% tn = tn(mask,:);
-% tc = tc(mask,:);
-% idn = idn(mask,:);
-% -----------------------------
-
-tb = table(tn, tc, idn, obs(:,1), obs(:,2), obs(:,3), obs(:,4), 'VariableNames',{'time', 'period', 'id', 'obs1', 'obs2', 'obs3', 'obs4'});
-
-lme1 = fitlme(tb, 'obs1 ~ 1 + period + (1|id)');
-lme2 = fitlme(tb, 'obs2 ~ 1 + period + (1|id)');
-lme3 = fitlme(tb, 'obs3 ~ 1 + period + (1|id)');
-lme4 = fitlme(tb, 'obs4 ~ 1 + period + (1|id)');
+lme1 = fitlme(tb, 'obs1 ~ 1 + period + device + (1|id)');
+lme2 = fitlme(tb, 'obs2 ~ 1 + period + device + (1|id)');
+lme3 = fitlme(tb, 'obs3 ~ 1 + period + device + (1|id)');
+lme4 = fitlme(tb, 'obs4 ~ 1 + period + device + (1|id)');
 
 lme{1} = lme1;
 lme{2} = lme2;
