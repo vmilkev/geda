@@ -55,30 +55,52 @@ else
 end
 
 t_mask = t_dif2 < 0;
-if (sum(t_mask) > 0) && (sum(t_mask)/numel(t_mask) < 0.0001)
-    data(t_mask,:) = [];
-    if use_time
-        t_dif2 = data.time(2:end, 1)-data.time(1:end-1,1);
-    else
-        t_dif2 = data.Var1(2:end, 1)-data.Var1(1:end-1,1);
-    end
-    t_mask = t_dif2 < 0;
+
+if sum(t_mask) > 0 % handle time non-consecutiveness issue
+    
     while sum(t_mask) > 0
-        data(t_mask,:) = [];
-        if use_time
+
+        jump_pos = find(t_mask ~= 0); % find positions where we have time inconsistency
+        jump_periods = zeros(size(jump_pos,1)+1,1);
+        start_pos = 0;
+        for i1 = 1:size(jump_pos)
+            jump_periods(i1,1) = jump_pos(i1) - start_pos;
+            start_pos = jump_pos(i1) + 1;
+        end
+        jump_periods(end,1) = numel(t_mask) - start_pos;
+
+        all_signals = table2array(data(:,end));
+
+        start_pos = 1;
+        for i1 = 1:size(jump_periods,1)-1
+            if jump_periods(i1,1) < jump_periods(i1+1,1)
+                sig = table2array(data(start_pos,end));
+                f = (all_signals == sig);
+                data(f,:) = [];
+                disp(strcat("Part of the data set is not time-consecutive. Removed data corresponds to the signal no. ", num2str(sig)) );
+                break;
+            elseif sum(t_mask) == 1
+                sig = table2array(data(jump_pos(end,1),end));
+                f = (all_signals == sig);
+                data(f,:) = [];
+                disp(strcat("Part of the data set is not time-consecutive. Removed data corresponds to the signal no. ", num2str(sig)) );
+                break;
+            else
+                start_pos = jump_pos(i1,1);
+                continue;
+            end
+        end
+
+         if use_time
             t_dif2 = data.time(2:end, 1)-data.time(1:end-1,1);
         else
             t_dif2 = data.Var1(2:end, 1)-data.Var1(1:end-1,1);
         end
+
         t_mask = t_dif2 < 0;
-        if sum(t_mask)/numel(t_mask) > 0.0001
-            disp("The time in the data set is not consecutive. The data needs to be revised.");
-            return;
-        end
+
     end
-elseif (sum(t_mask) > 0) && (sum(t_mask)/numel(t_mask) >= 0.0001)
-    disp("The time in the data set is not consecutive. The data needs to be revised.");
-    return;
+    
 end
 
 time_col = 1;
@@ -120,6 +142,10 @@ for igas = (id_col+1):res_dim(1,2)-1 % loop over gas types
     end
         
     d = [t(mask) id(mask) gas(mask)]; % all data without filtered outliers
+    
+    if isempty(d)
+        continue;
+    end
     
     mask = d(:,id_col) == 0; % mask the background dataset
     

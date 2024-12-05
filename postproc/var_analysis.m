@@ -11,6 +11,7 @@ make_phenotypes("aligned_rlb_sniffer_4.txt",4);
 device = ["1" "2" "3" "4"];
 %device = ["1" "2"];
 %device = ["3" "4"];
+%device = ["4"];
 gas = "1";
 type = "rlb";
 %type = "init";
@@ -22,6 +23,7 @@ for i = 1:size(device,2)
 end
 
 tn = [];
+dates = [];
 idn = [];
 obs = [];
 dev = [];
@@ -29,6 +31,7 @@ u_ids = {};
 
 for i = 1:size(device,2)
     data = import_traits(files{i});
+    dates_ = data.time;
     tn_ = convertTo(data.time, 'posixtime');   
     idn_ = data.id;
 
@@ -57,9 +60,17 @@ for i = 1:size(device,2)
     % -----------------------------
 
     tn = [tn; tn_];
+    dates = [dates; dates_];
     idn = [idn; idn_];
     obs = [obs; obs_];
     dev = [dev; dev_];
+end
+
+% get the number of record for each ID
+c = unique(idn);
+n_rec = zeros(size(c));
+for i = 1:size(c,1)
+    n_rec(i,1) = sum(idn == c(i,1));
 end
 
 disp(["Overall (combined) unique ids:" num2str(numel(unique(idn)))]);
@@ -99,10 +110,10 @@ end
 
 tb = table(tn, tc, dev, idn, obs(:,1), obs(:,2), obs(:,3), obs(:,4), 'VariableNames',{'time', 'period', 'device', 'id', 'obs1', 'obs2', 'obs3', 'obs4'});
 
-lme1 = fitlme(tb, 'obs1 ~ 1 + period + device + (1|id)');
-lme2 = fitlme(tb, 'obs2 ~ 1 + period + device + (1|id)');
-lme3 = fitlme(tb, 'obs3 ~ 1 + period + device + (1|id)');
-lme4 = fitlme(tb, 'obs4 ~ 1 + period + device + (1|id)');
+lme1 = fitlme(tb, 'obs1 ~ 1 + period - device + (1|id)');
+lme2 = fitlme(tb, 'obs2 ~ 1 + period - device + (1|id)');
+lme3 = fitlme(tb, 'obs3 ~ 1 + period - device + (1|id)');
+lme4 = fitlme(tb, 'obs4 ~ 1 + period - device + (1|id)');
 
 lme{1} = lme1;
 lme{2} = lme2;
@@ -117,6 +128,7 @@ for i = 1:4
     if i == 1
         disp(["sigmma", "err", "h", "R^2"]);
     end
+    trait_str = strcat("trt_", num2str(i));
     disp([psi{1}, mse, psi{1}/(psi{1}+mse), lme{i}.Rsquared.Adjusted]);
     
     [B,Bnames,stats] = randomEffects(lme{i});
@@ -128,9 +140,13 @@ for i = 1:4
     plot(iobs, yhat, '*');
     xlim([min(iobs) max(iobs)]);
     ylim([min(iobs) max(iobs)]);
+    xlabel("observation");
+    ylabel("prediction");
+    title(strcat("trait ", num2str(i)));
     box on
     axis square
     % ---------------------
+    sgtitle("Prediction with LMM");
 end
 
 u = unique(idn);
@@ -203,6 +219,19 @@ for i = size(obs, 2)+1:size(obs, 2) * 2
     xlabel("relative std");
     box on
 end
+
+figure(4);
+set(gcf,'Color','white');
+subplot(1,2,1);
+histogram(n_rec);
+ylabel("counts");
+xlabel("number of records per cow");
+title("Number of observations per dataset");
+subplot(1,2,2);
+histogram(dates);
+ylabel("counts");
+xlabel("dates");
+title("Overal observations per dataset");
 
 %% FUNCTIONS
 
