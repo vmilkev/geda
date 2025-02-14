@@ -21,7 +21,7 @@ opts.EmptyLineRule = "read";
 mesr = readtable(filename, opts);
 
 if isempty(mesr)
-    disp("importfile_csv2(): readtable(filename, opts) gives empty mesr variable.");
+    this.make_report( "dat", "ERROR in importfile_csv2(): readtable(filename, opts) gives empty mesr variable! ", [] );
     return;
 end
 
@@ -59,9 +59,9 @@ end
 
 %datetime.setDefaultFormats('default',fmt{min_fmt}); % setting the default format
 
-this.make_report("dat", "importfile_csv2(): converting day-time using the selected format", []);
-this.make_report("dat",  convertCharsToStrings(fmt{min_fmt}), []);
-this.make_report("dat", "importfile_csv2(): in the case of error, check a day-time format in a data file!", []);
+this.make_report("dat",  strcat( "Converting Sniffers day-time records using the following format: ",convertCharsToStrings( fmt{min_fmt} ) ), []);
+this.make_report("dat", "NOTE: Check if a day-time format in a Sniffer data file corresponds to the one used in the program.", []);
+this.make_report("dat", " ", []);
 
 mesr_num( :,1 ) = datenum( dt,fmt{min_fmt} );
 %mesr_num( :,1 ) = datenum( dt ); % here we are using the default format
@@ -73,31 +73,19 @@ for i_col = 3:sz2(1,2)
         val = strrep(val,',', '.');
         mesr_num( :,i_col-1 ) = str2double(val);
     elseif isa(i_val, 'datetime')
-        this.make_report("dat", "importfile_csv2(): in the sniffer data file a column consists of datetime data, will be omitted. Col no.: ", i_col);
+        this.make_report("dat", "--------------------------------------------------------------------------------------------------------", []);
+        this.make_report("dat", "WARNING: In the sniffer data file a column consists of datetime data, will be omitted. Col no.: ", i_col);
+        this.make_report("dat", "--------------------------------------------------------------------------------------------------------", []);
         continue;
     elseif isa(i_val, 'double')
         mesr_num( :,i_col-1 ) = mesr{:,i_col};
     else
-        this.make_report("dat", "importfile_csv2(): undefined data type found in a column of the sniffer data file. Col no.: ", i_col);
+        this.make_report("dat", "----------------------------------------------------------------------------------------", []);
+        this.make_report("dat", "ERROR: undefined data type found in a column of the sniffer data file. Col no.: ", i_col);
+        this.make_report("dat", "----------------------------------------------------------------------------------------", []);
         return;
     end
 end
-
-% if isa(mesr{1,3}, 'cell')
-%     num3 = mesr{:,3};
-%     num3 = strrep(num3,',', '.');
-%     mesr_num( :,2 ) = str2double(num3);
-% else
-%     mesr_num( :,2 ) = mesr{:,3};
-% end
-% 
-% if isa(mesr{1,4}, 'cell')
-%     num4 = mesr{:,4};
-%     num4 = strrep(num4,',', '.');
-%     mesr_num( :,3 ) = str2double(num4);
-% else
-%     mesr_num( :,3 ) = mesr{:,4};
-% end
 
 inan_2 = isnan( mesr_num(:,2) );
 inan_3 = isnan( mesr_num(:,3) );
@@ -105,9 +93,10 @@ inan = inan_2 | inan_3;
 
 n_nan = numel( find(inan == 1));
 if ( n_nan > 1 )
-    this.make_report( "dat", "WORNING! The NAN records were found in the sniffer data file!                   ", [] );
-    this.make_report( "dat", "         Number of records with NAN, will be excluded from the processing data: ", n_nan );
-    this.make_report( "dat", "         The number of records in the file, will be further processed:          ", numel(inan) - n_nan );
+    this.make_report( "dat", "-------------------------------------------------------------------------------------------", []);
+    this.make_report( "dat", "WORNING: NAN records were found in the sniffer data file.                           ", [] );
+    this.make_report( "dat", "         The following number of records will be excluded from the processing data: ", n_nan );
+    this.make_report( "dat", "         The following number of records will be processed:                         ", numel(inan) - n_nan );
     this.make_report( "dat", "-------------------------------------------------------------------------------------------", []);
 end
 

@@ -4,7 +4,7 @@ function [data, robots] = get_lely_data( this, type )
 % RETURNS A ROBOT DATA
 
 if ~this.isLelyData
-    this.read_data();
+    this.read_data(); % this will read a sniffer data as well
 end
 
 if isempty(this.Robots)

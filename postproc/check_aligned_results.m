@@ -1,31 +1,30 @@
 
 clear;
 
-p_file1 = "test/param_21834.txt";
-p_file2 = "geda_param_105_v2.dat"; %                               135 sec spell exists <= good improvement
+p_file1 = "test/param_21834.txt"; % all good results
+p_file2 = "geda_param_105_v2.dat"; % 135 sec spell exists <= good improvement
 p_file3 = "test/param_26089_2.txt"; % !!! check zeros in the output. Results are good.
-p_file4 = "test/param_33489.txt"; %                                10 sec spell exists
+p_file4 = "test/param_33489.txt"; % 10 sec spell exists
 p_file5 = "test/param_31563.txt"; % not enough memory
 p_file6 = "test/param_57112.txt"; % good results. !!! check zeros in the output; 11-14 sec spells exist; NOTE, good reliability detection. !Denoising improves the detection.
-p_file7 = "test/param_59551.txt"; % nice example of partly unreliable data;      184 sec spell exists. Denoising improves the detection.
-p_file8 = "test/param_63204.txt"; % good results
+p_file7 = "test/param_59551.txt"; % nice example of partly unreliable data!!!; 184 sec spell exists. Denoising improves the detection.
+p_file8 = "test/param_63204.txt"; % all good results
 p_file9 = "test/param_63625.txt"; % 1/3 of data not aligned; strange data, consider for fault detection case.
-p_file10 = "test/param_110038.txt"; %                              78-228 min spells exist <= no improvement. !!! Because the signalls are too short due to breacks.
+p_file10 = "test/param_110038.txt"; % 78-228 min spells exist <= no improvement. !!! Because the signalls are too short due to breacks.
 p_file11 = "test/param_13144.txt"; % long running ...
 p_file12 = "test/param_25184.txt"; % NOTE, good reliability detection
 p_file13 = "test/31563_first/Handling_final/param_31563F_R2.txt";
 p_file14 = "test/31563_second/Handling_final/param_31563S_R2.txt";
 p_file15 = "test/CPH/Handling_test_1day/param_MO_1day_R1.txt";
 p_file16 = "param_56614_R1.txt";
-p_file17 = "test/param_84544_R7_2023_10.txt";
+p_file17 = "test/param_84544_R7_2023_10.txt"; % partly reliable; moderately long running
 
-tic;
-main(p_file4); % run alignment
-toc
+main(p_file17); % run alignment
 
 %%
-res = read_aligned("aligned_init_sniffer_101.txt"); % check results
-%res = read_aligned("filtered_data.txt"); % check results
+res = read_aligned("rlb_14-Feb-2025_18-40-42_dev_101.geda"); % check results
+%res = read_aligned("aligned_init_sniffer_4.txt"); % check results
+%res = read_aligned("aligned_init_sniffer_2.txt"); % check results
 
 %%
 
@@ -37,6 +36,8 @@ co2 = {};
 get_ch4 = true;
 
 figure(3);
+
+gases = 5;
 
 for i_plot = 3:gases-1
 
@@ -127,9 +128,11 @@ Hsqv = H*H';
 % H95pca = coeff(:,1:pca_95)*coeff(:,1:pca_95)'*H;
 
 noise_edge = 90; % procent of explained_eigenvalues
+noise_edge80 = 80; % procent of explained_eigenvalues
 
 explained_svd = 100*diag(S.^2)./sum(diag(S.^2));
-svd_expl = find(cumsum(explained_svd)>noise_edge,1); % components explain more than 95% of all variability
+svd_expl = find(cumsum(explained_svd)>noise_edge,1); % components explain more than 90% of all variability
+svd_expl2 = find(cumsum(explained_svd)>noise_edge80,1); % components explain more than 80% of all variability
 
 % Reconstructing
 RC=zeros(N,L);
@@ -160,11 +163,15 @@ hold off;
 title("original (F) and components (RCi, 90 % variance) data");
 
 figure(7);
-plot(t,F);
+plot(t,F, 'ro:', 'LineWidth', 2);
 hold on;
-plot(t,sum(RC(:,1:4),2));
+y = sum(RC(:,1:svd_expl),2);
+y2 = sum(RC(:,1:svd_expl2),2);
+%plot(t,y, 'b');
+plot(t,y2, 'k', 'LineWidth', 2);
 hold off;
-title("original (F) and reconstructed (RC, using 4 components) data");
+ttl = strcat("original (F) and reconstructed (RC, using ", num2str(svd_expl), " components) data");
+title(ttl);
 
 w = zeros(N,1);
 for i = 1:N

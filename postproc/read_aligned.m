@@ -7,7 +7,7 @@ function [res] = read_aligned(filename, dataLines)
         dataLines = [2, Inf];
     end
 
-    opts = detectImportOptions(filename);
+    opts = detectImportOptions(filename, 'FileType', 'text');
 
     % Specify range
     opts.DataLines = dataLines;

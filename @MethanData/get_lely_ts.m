@@ -1,24 +1,40 @@
-function data = get_lely_ts( this, robots, delta_t )
+function [data, data_fnames] = get_lely_ts( this, robots )
 
-    % PUBLIK INTERFACE TO THE CLASS MEMBER VARIABLES
-    % RETURNS A ROBOT TIME SERIES DATA
-    
-    if ~this.isLelyData
-        this.read_data();
-    end
-    
-    if isempty(this.Robots)
-        disp("get_lely_ts(): The ROBOT data is empty.");
-        return;
-    end
-    
-    data = cell( numel(robots),1 );
-    
-    for i = 1:numel( robots )
-        data{i,1} = this.create_ts2( this.LelyNumMap(robots(i)), 1.0 ); % extend to 1 sec interval
-        if ( delta_t > 1.0 )
-            data{i,1} = this.shrink( data{i,1}, delta_t ); % shrink to requested deltaT
-        end
-    end
+% PUBLIK INTERFACE TO THE CLASS MEMBER VARIABLES
+% RETURNS AMS TIME SERIES DATA
+
+if ~this.isLelyData
+    this.read_data();
+end
+
+if isempty(this.Robots)
+    disp("get_lely_ts(): The ROBOT data is empty.");
+    return;
+end
+
+data = cell( numel(robots),1 );
+data_stat = zeros(numel( robots ),4);
+
+for i = 1:numel( robots )
+
+    tic;
+
+    [data{i,1}, data2, data_range] = this.resample_ams( this.LelyNumMap(robots(i)) ); % resample to delta_t interval
+
+    fname = strcat("ams_",num2str(i),".bin");
+    this.move_to_binary(data2,fname);
+    clear data2
+    data_fnames{i,1} = fname;
+
+    elps_time = toc;
+
+    data_stat(i,1) = i; % data set no.
+    data_stat(i,2) = floor(data_range*24); % data length, hours
+    data_stat(i,3) = this.get_sampling_freq(); % resampling freq, sec
+    data_stat(i,4) = elps_time; % elapsed time
+
+end
+
+this.make_report("stats", "AMS data summary:", data_stat);
 
 end

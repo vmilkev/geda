@@ -36,20 +36,17 @@ t = (1:N)';
 % hold off;
 %--------------------------------------------------------------------
 
-
 % making Hankel matrix
 H = zeros(L,K);
 for i1 = 1:L
     H(i1,1:K) = X( i1 : i1 + K-1 );
-
 end
 
 % figure(2);
 % imagesc(H);
-
-
+%
 % Hsqv = H*H';
-
+%
 % figure(3);
 % imagesc(Hsqv);
 
@@ -58,11 +55,10 @@ end
 % [coeff,score,latent,~,explained,mu] = pca(H);
 % pca_95 = find(cumsum(explained)>50,1); % components explain more than 95% of all variability
 % H95pca = coeff(:,1:pca_95)*coeff(:,1:pca_95)'*H;
-
-noise_edge = 90; % procent of explained_eigenvalues
-
-explained_svd = 100*diag(S.^2)./sum(diag(S.^2));
-svd_expl = find(cumsum(explained_svd)>noise_edge,1); % components explain more than 95% of all variability
+%
+% noise_edge = 90; % procent of explained_eigenvalues
+% explained_svd = 100*diag(S.^2)./sum(diag(S.^2));
+% svd_expl = find(cumsum(explained_svd)>noise_edge,1); % components explain more than 95% of all variability
 
 % Reconstructing
 RC=zeros(N,L);
@@ -94,25 +90,25 @@ end
 % hold on;
 % plot(t,sum(RC(:,1:4),2));
 % hold off;
-
-w = zeros(N,1);
-for i = 1:N
-    if (i >= 1 && i <= L)
-        w(i,1) = i + 1;
-    elseif (i >= L+1 && i <= K)
-            w(i,1) = L;
-    elseif (i >= K+1 && i <= N)
-            w(i,1) = N - i;
-    end
-end
-
-W = zeros(L);
-for i = 1:L
-    for j = 1:L
-        W(i,j) = ( RC(:,i)'*(RC(:,j).*w) )/( sqrt((RC(:,i)'*(RC(:,i).*w))) * sqrt((RC(:,j)'*(RC(:,j).*w))) );
-    end
-end
-
+%
+% w = zeros(N,1);
+% for i = 1:N
+%     if (i >= 1 && i <= L)
+%         w(i,1) = i + 1;
+%     elseif (i >= L+1 && i <= K)
+%             w(i,1) = L;
+%     elseif (i >= K+1 && i <= N)
+%             w(i,1) = N - i;
+%     end
+% end
+% 
+% W = zeros(L);
+% for i = 1:L
+%     for j = 1:L
+%         W(i,j) = ( RC(:,i)'*(RC(:,j).*w) )/( sqrt((RC(:,i)'*(RC(:,i).*w))) * sqrt((RC(:,j)'*(RC(:,j).*w))) );
+%     end
+% end
+%
 % figure(8);
 % imagesc(W);
 

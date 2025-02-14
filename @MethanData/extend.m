@@ -1,4 +1,4 @@
-function [ d3, d4 ] = extend( this, d, d_ns )
+function [ d3, d4, data_range_hours, sampl_frq_median, sampl_frq_min, sampl_frq_max ] = extend( this, d, d_ns )
 
     % Input data: d( serial_time, co2 ).
     
@@ -7,17 +7,25 @@ function [ d3, d4 ] = extend( this, d, d_ns )
     % calculate number of samples needed to cover the
     % range_sec = ( d(end,1)-d(1,1) )*tosec, assuming (smallest)
     % 1 sec sampling interval
+    
     samples = int64( ( d(end,1)-d(1,1) )*tosec );
 
     if (samples <= 0)
-        disp('extend(): the samples variable is negative or equals 0.');
+        this.make_report("dat", "WARNING in extend(): The sniffers data range is negative or equals 0!", []);
+        return;
     end
 
     this.deltaT_original = median((d(2:end,1)-d(1:end-1,1))*tosec);
     
     if (this.deltaT_original <= 0)
-        disp('extend(): the this.deltaT_original variable is negative or equals 0.');
+        this.make_report("dat", "WARNING in extend(): The median sampling frequency of sniffers data is negative or equals 0!", []);
+        return;
     end
+
+    data_range_hours = samples/3600;
+    sampl_frq_median = this.deltaT_original;
+    sampl_frq_min = min((d(2:end,1)-d(1:end-1,1))*tosec);
+    sampl_frq_max = max((d(2:end,1)-d(1:end-1,1))*tosec);
 
     d3 = zeros( samples,2 ); % extended, based on d(:,:), time series data (output)
     d4 = zeros( samples,size(d_ns,2) ); % extended, based on d(:,:), time series data (output)

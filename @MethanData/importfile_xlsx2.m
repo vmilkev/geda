@@ -63,9 +63,10 @@ for i = 1:numel(robots)
 
     n_nan = numel( find(inan == 1));
     if ( n_nan > 1 )
-        this.make_report( "dat", "WORNING! The NAN records were found in the AMS data file!                       ", [] );
-        this.make_report( "dat", "         Number of records with NAN, will be excluded from the processing data: ", n_nan );
-        this.make_report( "dat", "         The number of records in the file, will be further processed:          ", numel(inan) - n_nan );
+        this.make_report( "dat", "-------------------------------------------------------------------------------------------", []);
+        this.make_report( "dat", "WARNING: NAN records were found in the AMS data file!                               ", [] );
+        this.make_report( "dat", "         The following number of records will be excluded from the processing data: ", n_nan );
+        this.make_report( "dat", "         The number of records will be processed:                                   ", numel(inan) - n_nan );
         this.make_report( "dat", "-------------------------------------------------------------------------------------------", []);
     end
 
