@@ -1,7 +1,7 @@
 function [mesr, mesr_num] = importfile_csv2(this, filename)
 
-%this.mesr_param.range
-%% Set up the Import Options and import the data
+%this.geda_param.range
+% Set up the Import Options and import the data
 opts = detectImportOptions(filename);
 
 for i = 1:numel(opts.VariableTypes)
@@ -11,7 +11,7 @@ for i = 1:numel(opts.VariableTypes)
 end
 
 % Specify range
-opts.DataLines = this.mesr_param.snifrange;
+opts.DataLines = this.geda_param.snifrange;
 
 % Specify file level properties
 opts.ExtraColumnsRule = "ignore";
@@ -27,9 +27,7 @@ end
 
 sz2 = size(mesr);
 
-%%
 % Modify day/time of robot record robRec_0 and write it to the new array robRec
-%mesr_num = zeros( sz2(1,1), 3 );
 mesr_num = zeros( sz2(1,1), sz2(1,2)-1 );
 
 d = cellstr(mesr{:,1});
@@ -73,16 +71,14 @@ for i_col = 3:sz2(1,2)
         val = strrep(val,',', '.');
         mesr_num( :,i_col-1 ) = str2double(val);
     elseif isa(i_val, 'datetime')
-        this.make_report("dat", "--------------------------------------------------------------------------------------------------------", []);
         this.make_report("dat", "WARNING: In the sniffer data file a column consists of datetime data, will be omitted. Col no.: ", i_col);
-        this.make_report("dat", "--------------------------------------------------------------------------------------------------------", []);
+        this.make_report("dat", " ", []);
         continue;
     elseif isa(i_val, 'double')
         mesr_num( :,i_col-1 ) = mesr{:,i_col};
     else
-        this.make_report("dat", "----------------------------------------------------------------------------------------", []);
-        this.make_report("dat", "ERROR: undefined data type found in a column of the sniffer data file. Col no.: ", i_col);
-        this.make_report("dat", "----------------------------------------------------------------------------------------", []);
+        this.make_report("dat", "WARNING: undefined data type found in a column of the sniffer data file. Col no.: ", i_col);
+        this.make_report("dat", " ", []);
         return;
     end
 end
@@ -93,11 +89,10 @@ inan = inan_2 | inan_3;
 
 n_nan = numel( find(inan == 1));
 if ( n_nan > 1 )
-    this.make_report( "dat", "-------------------------------------------------------------------------------------------", []);
     this.make_report( "dat", "WORNING: NAN records were found in the sniffer data file.                           ", [] );
     this.make_report( "dat", "         The following number of records will be excluded from the processing data: ", n_nan );
     this.make_report( "dat", "         The following number of records will be processed:                         ", numel(inan) - n_nan );
-    this.make_report( "dat", "-------------------------------------------------------------------------------------------", []);
+    this.make_report( "dat", " ", []);
 end
 
 mesr_num = mesr_num(~inan,:);

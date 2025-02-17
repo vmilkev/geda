@@ -6,42 +6,13 @@ function alignTS( fparam )
 
 m = MethanData();
 
-%% Set general GEDA parameters
+%% Open report (log) file
 
-[ samplingT, signallength, is_ssa, ssa_wnd, ssa_eigval ] = m.set_geda_param(fparam);
+m.set_report_param( strcat("log_geda_",string(regexprep(regexprep(string(datetime()), ' +', '_'), ':+', '-')),".txt") );
 
-if isempty(is_ssa)
-    is_ssa = false;
-else
-    if is_ssa == 0
-       is_ssa = false;
-    else
-        is_ssa = true;
-        if isempty(ssa_wnd)
-            ssa_wnd = 200;
-        end
-        if isempty(ssa_eigval)
-            ssa_eigval = 10;
-        end
-        if ssa_wnd < ssa_eigval
-            disp('Parameter SSA1 cannot be lower than SSA2!');
-            return;
-        end
-    end
-end
+%% Set GEDA parameters
 
-%% Set parameters for reading data
-
-m.set_lely_param(fparam);
-m.set_mesr_param(fparam);
-
-%% Set report
-
-rp_file = "log_device_";
-rp_file1 = strcat(rp_file,num2str(m.device),".txt");
-rp_file2 = strcat(rp_file,num2str(m.device),".ps");
-
-m.set_report_param( rp_file1, rp_file2 );
+[ samplingT, signallength ] = m.set_geda_param(fparam);
 
 %% extract data in the numeric/table format
 
@@ -55,13 +26,27 @@ mesr_num = m.get_mesr_data( "numeric" );
 mesr_map = m.get_mesr_data( "table" );
 timeElapsed_m1 = toc;
 
+%% Checking if the Sniff data is within the range of AMS data
+
+for i = 1:size(mesr_num,1)
+    if ( lely_num{1, 1}(end,2)-lely_num{1, 1}(1,2) ) < ( mesr_num{i, 1}(end,1)-mesr_num{i, 1}(1,1) )
+       m.make_report("datint", "WARNING: AMS data range is smaller than SNIFF data range. The data set no.:", i);
+    end
+    if lely_num{1, 1}(1,2) >= mesr_num{i, 1}(end,1)
+        m.make_report("datint", "WARNING: AMS data range starts later than the SNIFF data range ends. The data set no.:", i);
+    end
+    if lely_num{1, 1}(end,2) <= mesr_num{i, 1}(1,1)
+        m.make_report("datint", "WARNING: AMS data range ends earlier than the SNIFF data range starts. The data set no.:", i);
+    end
+end
+
 %% Reporting
 
 m.make_report("dat", "Time of reading all AMS data, seconds: ", timeElapsed_r1 );
 m.make_report("dat", " ", []);
 m.make_report("txt", "AMS DATA", lely_num, lely_map);
 m.make_report("dat", "Time of reading sniffer data, seconds: ", timeElapsed_m1 );
-m.make_report("dat", "Reading of robot: ", m.get_mesr_robot());
+m.make_report("datint", "Reading of robot: ", m.get_mesr_robot());
 m.make_report("dat", " ", []);
 m.make_report("txt", "SNIFFER DATA", mesr_num, mesr_map);
 
@@ -93,35 +78,15 @@ end
 %% Prepare some data
 
 A = lely_ts{1,1}(1:end,2);
+A = (A - 0.5)*2.0; % scalling to [-1,1]
 
-if is_ssa % do SSA on A
-    A2 = zeros(size(A));
-    Acell = {};
+if m.is_ssa % do SSA on A
+    tic;
     m.make_report("dat", "Starting SSA on AMS data...", []);
-    A = (A - 0.5)*2.0; % scalling to [-1,1]
-    w_length = 4000;
-    n_waves = floor( numel(A)/w_length ); % number of waves (sub-signals)
-    r1 = zeros(n_waves);
-    r2 = zeros(n_waves);
-    r1(1) = 1;
-    r2(1) = w_length;
-    for ii = 2:n_waves
-        r1(ii) = r1(ii-1) + w_length;
-        r2(ii) = r2(ii-1) + w_length;
-    end
-    r2(n_waves) = numel(A);
-
-    parfor ii = 1:n_waves
-        [A0,~] = m.ssa2(A(r1(ii):r2(ii)),ssa_wnd,ssa_eigval);
-        Acell{ii} = A0;
-    end
-    for ii = 1:n_waves
-        A2( r1(ii):r2(ii) ) = Acell{ii};
-    end
-    A = A2;
-    m.make_report("dat", "SSA on AMS data is completed.", []);
-else
-    A = (A - 0.5)*2.0; % scalling to [-1,1]
+    max_length = 4000;
+    A = m.apply_ssa_ams(A, min(numel(A),max_length), m.ssa_wnd, m.ssa_eigval);
+    elps_t = toc;
+    m.make_report("dat", "SSA on AMS data is completed. Elapsed time: ", elps_t);
 end
 
 %% Calculate optimal sig_length
@@ -137,7 +102,7 @@ if ( isempty(signallength) || isnan(signallength) ) % number of signals to detec
     l = 1;
     for i_len = 2:min(min_snif_len, max_sig_length) % suppose we use as the upper limit of signal duration is either 5 hours or length of smallest data set
         tic;
-        [~,adj_table,~,~,~,~,~] = m.mf_detection(msr_ts, lely_ts, A, i_len, is_ssa, false);
+        [~,adj_table,~,~,~,~,~] = m.mf_detection(msr_ts, lely_ts, A, i_len, m.is_ssa, false);
         [ rlb_res, ~, ~ ] = m.detect_reliability(adj_table(:,1), 1);
         if isempty(rlb_res)
             rlb_res = m.detect_reliability2( adj_table, i_len*60*60 );
@@ -165,8 +130,10 @@ else
     sig_length = signallength;
 end
 
-m.make_report("dat", "Maximal signal length used for MF detection, hours:", sig_length);
+m.make_report("datint", "Maximal signal length used for MF detection, hours:", sig_length);
 m.make_report("dat", " ", []);
+
+%% Clear unnecessary data
 
 clear opt_res adj_table rlb_res snif_len
 
@@ -178,7 +145,7 @@ clear opt_res adj_table rlb_res snif_len
  test_statistic,...
  test_statistic_clst,...
  ams_dates,...
- snifer_dates] = m.mf_detection(msr_ts, lely_ts, A, sig_length, is_ssa, true);
+ snifer_dates] = m.mf_detection(msr_ts, lely_ts, A, sig_length, m.is_ssa, true);
 
 %% Reliability estimation of performed detection
 
@@ -218,7 +185,6 @@ m.make_report("dat", "              confidence of quality estimation, %:", accur
 m.make_report("dat", " ", []);
 m.make_report("stats", "Skews and MF signals:", stats);
 m.make_report("skew", "Sniffer starting dates (for each signal):", snifer_dates, ams_dates);
-%m.make_report("dat", " ", []);
 
 %% Clear unnecessary data
 
@@ -226,22 +192,25 @@ clear A msr_ts lely_ts res stats snifer_dates ams_dates
 
 %% Writing alignment results
 
-m.make_report("dat", "Writing the aligned data into files ...", []);
-
 tic;
 if (sum(adj_table(:,7))/numel(adj_table(:,7))) > 0.0 % if the reliable data found
     m.write_alignment_results( adj_table, ams_fnames, snf_ts_fnames );
+else
+    m.make_report("dat", "WARNING: No reliable data found. There is nothing to write into files.", []);
 end
 elps_time = toc;
 
-m.make_report("dat", "Completed. Elapsed time of writing the aligned data into files, sec:", elps_time);
+m.make_report("dat", "Elapsed time of writing the aligned data into files, sec:", elps_time);
 
-%% delete .bin files
+%% Finalize: delete .bin files and close the log file
 
 m.fclean(ams_fnames);
 m.fclean(snf_ts_fnames);
 
-delete(m); % explicitelly calling the class destructor; though, not really necessary
+m.make_report( "dat", " ", []);
+m.make_report( "dat", strcat("GEDA LOG, completed: ",string(datetime()) ), []);
+
+m.on_exit(); % close log file
 
 return;
 

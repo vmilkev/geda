@@ -92,7 +92,6 @@ function [ d3, d4, data_range_hours, sampl_frq_median, sampl_frq_min, sampl_frq_
         end
         % resampling
         d3 = d3(samples,:); % only for d3 because we will need d4 only with 1 sec frequency
-        %d4 = d4(samples,:);
     end
     
     % ------ INTERNAL FUNCTION ------------------

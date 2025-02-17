@@ -3,13 +3,22 @@ function write_alignment_results( this, summary_table, ams_fnames, snf_fnames )
     date_now = regexprep(regexprep(string(datetime()), ' +', '_'), ':+', '-'); % day-time without sopaces and colomns in between
     aligned_data_file_rlb = strcat("rlb_",...
                                    date_now,...
-                                   "_dev_",...
+                                   "_robot_",...
                                    num2str(this.device),... % robot (device) id
                                    ".geda");
+
+    if this.outpath ~= ""
+        if ~exist(this.outpath, 'dir')
+           mkdir(this.outpath);
+        end
+        aligned_data_file_rlb = strcat(this.outpath,aligned_data_file_rlb);
+    end
 
     if exist(aligned_data_file_rlb, 'file')
         delete(aligned_data_file_rlb);
     end
+
+    this.make_report("dat", strcat("Writing the processed data into the file: ", aligned_data_file_rlb), []);
     
     varNames = {'time','id','gas','signal'};
 

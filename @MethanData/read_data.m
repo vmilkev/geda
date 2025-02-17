@@ -7,7 +7,7 @@ if ( ~this.isLelyData )
 end
 
 % here we can read mesurements data files multiple times
-if ( ~isempty(this.mesr_param) )
+if ( ~isempty(this.geda_param) )
     this.read_mesr_data();
 end
 

@@ -15,9 +15,7 @@ for j = 1:numel(snf_data) % for each Sniffer data file or data set
 
     if ( size(snf_data{j,1},1) <= 1  )
         if report_msg
-            this.make_report("dat", "----------------------------------------------------------------------", []);
-            this.make_report("dat", "WARNING! There is only 1 or no records present in the signal no.:", j);
-            this.make_report("dat", "----------------------------------------------------------------------", []);
+            this.make_report("dat", "WARNING: There is only 1 or no records present in the signal no.:", j);
         end
         continue;
     end
@@ -26,9 +24,7 @@ for j = 1:numel(snf_data) % for each Sniffer data file or data set
 
     if ( snif_length < 1 )
         if report_msg
-            this.make_report("dat", "--------------------------------------------------------------------------------------------", []);
-            this.make_report("dat", "WARNING! The signal length is less than 1 hour, hence will not be processed; the singal no.:", j);
-            this.make_report("dat", "--------------------------------------------------------------------------------------------", []);
+            this.make_report("dat", "WARNING: The signal length is less than 1 hour, hence will not be processed; the singal no.:", j);
         end
         continue;
     end
@@ -37,9 +33,6 @@ for j = 1:numel(snf_data) % for each Sniffer data file or data set
 
     if ( waves == 0 )
         waves = 1;
-        % this.make_report("dat", "WARNING! The signal length (duration) provided with $SIGLENGTH parameter is too high for the processing data!", []);
-        % this.make_report("dat", "         Entire sniffer records will be processed without splitting!", []);
-        % this.make_report("dat", "-------------------------------------------------------------------------------------------", []);
     end
 
     wlength = floor(numel(snf_data{j,1}(:,2))/waves);
@@ -54,7 +47,7 @@ for j = 1:numel(snf_data) % for each Sniffer data file or data set
             B = snf_data{j,1}(first:last,2);
         else
             B = snf_data{j,1}(first:last,2);
-            [B,~] = this.ssa2(B,ssa_wnd,ssa_eigval);
+            [B,~] = this.ssa(B,this.ssa_wnd,this.ssa_eigval,[]);
         end
 
         range = numel(ams_arr(:,1))-numel(B(:,1))+1;
@@ -80,9 +73,7 @@ for j = 1:numel(snf_data) % for each Sniffer data file or data set
         if ( size(char(snifer_time),2) < 15 ) % the case when there is no HH:mm:ss in snifer_time
             snifer_time = strcat( snifer_time, ' 00:00:00');
             if report_msg
-                this.make_report("dat", "-------------------------------------------------------------------------------------", []);
                 this.make_report("dat", "WARNING: found short sniffer time; the case when there is no HH:mm:ss in snifer_time.", []);
-                this.make_report("dat", "-------------------------------------------------------------------------------------", []);
             end
         end
 
@@ -101,7 +92,6 @@ for j = 1:numel(snf_data) % for each Sniffer data file or data set
         adj_tab(all_signals,6) = j; % index of the processued dataset (often a file)
 
         all_signals = all_signals + 1;
-
     end
 
     elps_time = toc;

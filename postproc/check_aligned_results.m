@@ -19,10 +19,12 @@ p_file15 = "test/CPH/Handling_test_1day/param_MO_1day_R1.txt";
 p_file16 = "param_56614_R1.txt";
 p_file17 = "test/param_84544_R7_2023_10.txt"; % partly reliable; moderately long running
 
-main(p_file17); % run alignment
+tic;
+main(p_file1); % run alignment
+toc
 
 %%
-res = read_aligned("rlb_14-Feb-2025_18-40-42_dev_101.geda"); % check results
+res = read_aligned("geda_results/rlb_17-Feb-2025_13-59-47_robot_101.geda"); % check results
 %res = read_aligned("aligned_init_sniffer_4.txt"); % check results
 %res = read_aligned("aligned_init_sniffer_2.txt"); % check results
 

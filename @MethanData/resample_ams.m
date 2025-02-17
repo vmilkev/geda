@@ -22,7 +22,7 @@ function [A, A2, range] = resample_ams( this, data )
 delta_t = 1; % resample data for 1 sec first
 
 if delta_t == 0
-    warning("ERROR in create_ts2(...): delta_t == 0!");
+    this.make_report("dat", "WARNING: ERROR in create_ts2(...): delta_t == 0!", []);
     return;
 end
 
@@ -37,7 +37,7 @@ sz = size(data);
 range = data(end,t_out) - data(1,t_in);
 
 if (range <= 0)
-    warning('AMS data range (between start and end of records) is negative or equals 0!');
+    this.make_report("dat", "WARNING: AMS data range (between start and end of records) is negative or equals 0!", []);
     return;
 end
 

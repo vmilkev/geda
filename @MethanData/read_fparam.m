@@ -59,6 +59,9 @@ p.wndlength = [];
 p.eigenvalues = [];
 p.denoise = [];
 
+% where to write the resulting files
+p.outpath = [];
+
 for i = 1:size(info,1)
     if ( ~isempty(info{i,1}) )
         switch info{i,1}
@@ -106,6 +109,12 @@ for i = 1:size(info,1)
                 p.wndlength = str2double( info{i,2} );
             case 'SSA2'
                 p.eigenvalues = str2double( info{i,2} );
+            case 'OUTPATH'
+                p.outpath = split(info{i,2},",");
+                pfile = strtrim(convertCharsToStrings( p.outpath ));
+                p.outpath = pfile;
+            otherwise
+                disp( strcat( "WARNING: not recognised parameter's KEYWORD: ", convertCharsToStrings(info{i,1}) ) );
         end
     end
 end

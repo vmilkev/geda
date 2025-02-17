@@ -1,4 +1,4 @@
-function [ H,l,nl,F ] = ssa( X, L, Q, E )
+function [ H,l,nl,F ] = ssa( this, X, L, Q, E )
 
 % X := signal to analyse
 % L := size of window for Hankel matrix
