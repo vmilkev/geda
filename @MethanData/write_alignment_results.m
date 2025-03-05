@@ -1,8 +1,7 @@
 function write_alignment_results( this, summary_table, ams_fnames, snf_fnames )
 
-    date_now = regexprep(regexprep(string(datetime()), ' +', '_'), ':+', '-'); % day-time without sopaces and colomns in between
-    aligned_data_file_rlb = strcat("rlb_",...
-                                   date_now,...
+    aligned_data_file_rlb = strcat("aligned_",...
+                                   this.date_now,...
                                    "_robot_",...
                                    num2str(this.device),... % robot (device) id
                                    ".geda");
@@ -15,6 +14,8 @@ function write_alignment_results( this, summary_table, ams_fnames, snf_fnames )
     end
 
     if exist(aligned_data_file_rlb, 'file')
+        this.make_report("dat", "WARNING: There is the alignment file of the same name already exist in the output folder!", []);
+        this.make_report("dat", "         The existing data will be overwriten by the new data!", []);
         delete(aligned_data_file_rlb);
     end
 

@@ -2,9 +2,16 @@
 clear;
 
 p_file1 = "test/param_21834.txt"; % all good results
+p_file1_2 = "test/param_21834_2.txt";
+p_file1_3 = "test/param_21834_3.txt";
+%--------------------------------------
+p_file4 = "test/param_33489.txt"; % 10 sec spell exists
+p_file4_2 = "test/param_33489_2.txt";
+p_file4_3 = "test/param_33489_3.txt";
+%--------------------------------------
 p_file2 = "geda_param_105_v2.dat"; % 135 sec spell exists <= good improvement
 p_file3 = "test/param_26089_2.txt"; % !!! check zeros in the output. Results are good.
-p_file4 = "test/param_33489.txt"; % 10 sec spell exists
+%
 p_file5 = "test/param_31563.txt"; % not enough memory
 p_file6 = "test/param_57112.txt"; % good results. !!! check zeros in the output; 11-14 sec spells exist; NOTE, good reliability detection. !Denoising improves the detection.
 p_file7 = "test/param_59551.txt"; % nice example of partly unreliable data!!!; 184 sec spell exists. Denoising improves the detection.
@@ -19,12 +26,18 @@ p_file15 = "test/CPH/Handling_test_1day/param_MO_1day_R1.txt";
 p_file16 = "param_56614_R1.txt";
 p_file17 = "test/param_84544_R7_2023_10.txt"; % partly reliable; moderately long running
 
-tic;
-main(p_file1); % run alignment
-toc
+% main(p_file6);
+
+main(p_file1);
+main(p_file1_2);
+main(p_file1_3);
+
+% main(p_file4);
+% main(p_file4_2);
+% main(p_file4_3);
 
 %%
-res = read_aligned("geda_results/rlb_17-Feb-2025_13-59-47_robot_101.geda"); % check results
+res = read_aligned("trait_v1_25-Feb-2025_20-06-30_robot_4.geda"); % check results
 %res = read_aligned("aligned_init_sniffer_4.txt"); % check results
 %res = read_aligned("aligned_init_sniffer_2.txt"); % check results
 

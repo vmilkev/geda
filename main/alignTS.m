@@ -8,7 +8,7 @@ m = MethanData();
 
 %% Open report (log) file
 
-m.set_report_param( strcat("log_geda_",string(regexprep(regexprep(string(datetime()), ' +', '_'), ':+', '-')),".txt") );
+m.set_report_param( strcat("log_geda_",m.date_now,".txt") );
 
 %% Set GEDA parameters
 
@@ -89,10 +89,12 @@ if m.is_ssa % do SSA on A
     m.make_report("dat", "SSA on AMS data is completed. Elapsed time: ", elps_t);
 end
 
-%% Calculate optimal sig_length
+%% Set the sig_length parameter or calculate an optimal value of sig_length
 
-if ( isempty(signallength) || isnan(signallength) ) % number of signals to detect
-    max_sig_length = 6.0; % is an assumed minimal duration of a signal, [hours]
+if ( signallength == 0 ) % if no parameter is provided, use the default one
+    sig_length = 8;
+elseif signallength < 0 % in this case do optimization for the sig_length parameter
+    max_sig_length = 8.0; % is an assumed minimal duration of a signal, [hours]
     snif_len = zeros(numel(msr_ts),1);
     for i = 1:numel(msr_ts) % find lengths of sniffer records
         snif_len(i) = etime( datevec(msr_ts{i,1}(end,1)),datevec(msr_ts{i,1}(1,1)) )/( 60*60 ); % duration of sniffer records, [hours]
@@ -201,6 +203,18 @@ end
 elps_time = toc;
 
 m.make_report("dat", "Elapsed time of writing the aligned data into files, sec:", elps_time);
+
+%% Calculating and Writing emission traits
+
+tic;
+if (sum(adj_table(:,7))/numel(adj_table(:,7))) > 0.0 % if the reliable data found
+    m.write_traits( adj_table, ams_fnames, snf_ts_fnames, sig_length );
+else
+    m.make_report("dat", "WARNING: No reliable data found. Emission traits will not be provided.", []);
+end
+elps_time = toc;
+
+m.make_report("dat", "Elapsed time of calculating traits and writing into files, sec:", elps_time);
 
 %% Finalize: delete .bin files and close the log file
 

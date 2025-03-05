@@ -1,17 +1,17 @@
 clear;
 close all;
 
-%make_phenotypes("aligned_init_sniffer_4.txt",4, "ids_list_sniffer_4.txt");
+make_phenotypes("aligned_init_sniffer_4.txt",4);%, "ids_list_sniffer_4.txt");
 %make_phenotypes("aligned_init_sniffer_2.txt", 4, "ids_list_sniffer_2.txt");
-make_phenotypes("aligned_rlb_sniffer_4.txt",4);
+%make_phenotypes("aligned_rlb_sniffer_4.txt",4);
 %make_phenotypes("aligned_init_sniffer_1.txt",4, "ids_list_sniffer_1.txt");
 %make_phenotypes("aligned_init_sniffer_101.txt",4);
 
 %%
-device = ["1" "2" "3" "4"];
+%device = ["1" "2" "3" "4"];
 %device = ["1" "2"];
 %device = ["3" "4"];
-%device = ["4"];
+device = ["4"];
 gas = "1";
 type = "rlb";
 %type = "init";

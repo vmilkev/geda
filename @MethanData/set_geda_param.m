@@ -43,8 +43,8 @@ if ( isempty(this.geda_param.amsfile) )
     this.make_report("dat", "WARNING: The file with AMS data is not specified!", []);
     return;
 elseif ( isempty(this.geda_param.amsrange) )
-    this.make_report("dat", "WARNING: The range for AMS data is not specified!", []);
-    return;
+    this.geda_param.amsrange(1,1) = 2;
+    this.geda_param.amsrange(1,2) = str2double("Inf");
 elseif ( isempty(this.geda_param.device) )
     this.make_report("dat", "WARNING: The device name (robot) of AMS data is not specified!", []);
     return;
@@ -61,8 +61,8 @@ if ( isempty(this.geda_param.sniffile) )
     this.make_report("dat", "WARNING: The file with Sniffer data is not specified!", []);
     return;
 elseif ( isempty(this.geda_param.snifrange) )
-    this.make_report("dat", "WARNING: The range for Sniffer data is not specified!", []);
-    return;
+    this.geda_param.snifrange(1,1) = 2;
+    this.geda_param.snifrange(1,2) = str2double("Inf");
 elseif ( isempty(this.geda_param.robid) )
     this.make_report("dat", "WARNING: The device name (robot) of Sniffer data is not specified!", []);
     return;

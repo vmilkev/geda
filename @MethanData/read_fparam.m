@@ -63,7 +63,7 @@ p.denoise = [];
 p.outpath = [];
 
 for i = 1:size(info,1)
-    if ( ~isempty(info{i,1}) )
+    if ~isempty(info{i,1}) && ~isempty(info{i,2})
         switch info{i,1}
             case 'AMSFILE'
                 p.amsfile = split(info{i,2},",");%info{i,2};

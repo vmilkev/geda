@@ -30,6 +30,7 @@ classdef MethanData < handle
         is_ssa = true;
         ssa_wnd = 200;
         ssa_eigval = 5;
+        date_now = ""; % day-time without sopaces and colomns in between
     end
 
     % PUBLIK INTERFACE
@@ -38,6 +39,7 @@ classdef MethanData < handle
             this.isLelyData = false;
             this.isMesrData = false;
             this.text_fname = [];
+            this.date_now = regexprep(regexprep(string(datetime()), ' +', '_'), ':+', '-');
         end
         function delete( this ) % ......................... Class destructor
         end
@@ -72,6 +74,7 @@ classdef MethanData < handle
         [res_stats, adj_tab, skew_res, test_stat1, test_stat2, ams_dt, snf_dt] = mf_detection(this, snf_data, ams_data, ams_arr, sig_len, use_ssa, report_msg) % Matched Filter signal detection
         [accuracy, corrected_rlb] = get_rlb_accuracy( this, rlb_estimates ) % Calculates the accuracy of data reliability estimation
         res = apply_ssa_ams(this, arr, max_length, ssa_window, ssa_eigenvalue)
+        write_traits( this, summary_table, ams_fnames, snf_fnames, used_sig_length )
     end
 
     % PRIVATE INTERFACE

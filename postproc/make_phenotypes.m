@@ -91,7 +91,7 @@ if sum(t_mask) > 0 % handle time non-consecutiveness issue
             end
         end
 
-         if use_time
+        if use_time
             t_dif2 = data.time(2:end, 1)-data.time(1:end-1,1);
         else
             t_dif2 = data.Var1(2:end, 1)-data.Var1(1:end-1,1);
@@ -112,9 +112,8 @@ res_dim = size(data);
 n_gases = res_dim(1,2) - 3; % 3 because: time, id, and signal cols
 max_data_rows = res_dim(1,1);
 
-range0 = 1:max_data_rows; % use the entire range
-
-%range0 = 1:floor(max_data_rows/4); % for testing/debugging use a part of the data
+%range0 = 1:max_data_rows; % use the entire range
+range0 = 1:floor(max_data_rows/8); % for testing/debugging use a part of the data
 %range0 = floor(max_data_rows/4)+1:floor(max_data_rows/4)*2;
 %range0 = floor(max_data_rows/4)*2+1:floor(max_data_rows/4)*3;
 %range0 = floor(max_data_rows/4)*3+1:floor(max_data_rows/4)*4;
@@ -166,10 +165,10 @@ for igas = (id_col+1):res_dim(1,2)-1 % loop over gas types
     bkg = get_background( d0, time_pos, n_wnd ); % calculate background concentration for each window
     pos_arr = find_pos_by_value2( bkg(:,1), d1(:,1) );
     
-    % plot_overview();
-    % plot_bkg();
-    % plot_bkg_obs();
-    % plot_bkg_uncorr_obs();
+    plot_overview();
+    plot_bkg();
+    plot_bkg_obs();
+    plot_bkg_uncorr_obs();
 
     for i = 1:size(pos_arr,1)-1 % correct for backkground
         d1(pos_arr(i):pos_arr(i+1)-1,3) = d1(pos_arr(i):pos_arr(i+1)-1,3) - bkg(i,2);
@@ -251,13 +250,16 @@ end % end of for_loop ove gas types
     function plot_overview()
         figure(1);
         subplot(2,1,1), plot(d0(:,1)./60, d0(:,3), 'bo');
+        title("Background (blue)");
         subplot(2,1,2), plot(d1(:,1)./60, d1(:,3), 'ro');
+        title("Measurements (red)");
     end
 
     function plot_bkg()
         figure(2);
         t0 = d0(1,1);
         plot(bkg(:,1)./60 -t0./60, bkg(:,2), '-o');
+        sgtitle("Background");
     end
 
     function plot_bkg_obs()
@@ -286,6 +288,7 @@ end % end of for_loop ove gas types
         line(x./60,y,'Color','red','LineStyle','-', 'LineWidth', 2);
         xlabel("time, min");
         ylabel("gas, ppm %");
+        sgtitle("Background");
     end
 
     function plot_bkg_uncorr_obs()
@@ -308,6 +311,7 @@ end % end of for_loop ove gas types
             xlabel("time, min");
             ylabel("gas, ppm %");
         end
+        sgtitle("Background (blue) and Measurements (red)");
     end
 
     function bkg_arr = get_background( arr, pos_arr, num_wnds )
