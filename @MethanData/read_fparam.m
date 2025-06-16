@@ -10,16 +10,16 @@ pos = 0;
 
 while ( tline ~= -1 )
     tline = fgetl(fid);
-    
+
     while ( isempty(tline) )
         tline = fgetl(fid);
     end
-    
+
     if ( ~isempty(tline) && tline(1,1) == '$' )
-        
+
         pos = ftell(fid);
         msg = fgetl(fid);
-        
+
         while ( isempty(msg) || msg(1,1) == '#' )
             pos = ftell(fid);
             msg = fgetl(fid);
@@ -38,16 +38,14 @@ end
 
 p.amsfile = [];
 p.sniffile = [];
-p.dtype = [];
-p.sheet = [];
 p.amsrange = [];
 p.snifrange = [];
-p.head = [];
-p.robid = []; % robot id
+p.robid = []; % robot id, AMS station as DevAddress
+p.snif_id = []; % sniffer id, optional
+p.farm_id = []; % farm id, optional
 
 % for AMS param file
-p.ams = []; % type of AMS: lely | delaval
-p.device = [];
+p.device = []; % col name for robot id
 p.id = [];
 p.time = [];
 
@@ -62,6 +60,15 @@ p.denoise = [];
 % where to write the resulting files
 p.outpath = [];
 
+% for studying of downsampling
+p.dwnsampl = [];
+
+% type of trait
+p.trait = [];
+
+% for outliers filtering in write_traits.m
+p.filtering = [];
+
 for i = 1:size(info,1)
     if ~isempty(info{i,1}) && ~isempty(info{i,2})
         switch info{i,1}
@@ -73,24 +80,16 @@ for i = 1:size(info,1)
                 p.sniffile = split(info{i,2},",");%info{i,2};
                 pfile = strtrim(convertCharsToStrings( p.sniffile ));
                 p.sniffile = pfile;
-            case 'DTYPE'
-                p.dtype = split(info{i,2},",");
-                dtype = strtrim(convertCharsToStrings( p.dtype ));
-                p.dtype = dtype;
-            case 'SHEET'
-                p.sheet = info{i,2};
             case 'AMSRANGE'
                 p.amsrange = str2double( split(info{i,2},",")' );
             case 'SNIFRANGE'
                 p.snifrange = str2double( split(info{i,2},",")' );
-            case 'HEAD'
-                p.head = split(info{i,2},",");
-                head = strtrim(convertCharsToStrings( p.head ));
-                p.head = head;
-            case 'SNIFFER'
+            case 'SNIFID'
+                p.snif_id = string( info{i,2} );
+            case 'FARMID'
+                p.farm_id = string( info{i,2} );
+           case 'ROBOTID'
                 p.robid = str2double( info{i,2} );
-            case 'AMS'
-                p.ams = string( info{i,2} );
             case 'DEVICECOL'
                 p.device = string( info{i,2} );
             case 'IDCOL'
@@ -113,6 +112,14 @@ for i = 1:size(info,1)
                 p.outpath = split(info{i,2},",");
                 pfile = strtrim(convertCharsToStrings( p.outpath ));
                 p.outpath = pfile;
+            case 'DWNSAMPLING'
+                p.dwnsampl = str2double( info{i,2} );
+            case 'TRAIT'
+                p.trait = str2double( info{i,2} );
+            case 'FILTERING'
+                filtering = split(info{i,2},",");
+                filtering = strtrim(convertCharsToStrings( filtering ));
+                p.filtering = str2double(filtering);
             otherwise
                 disp( strcat( "WARNING: not recognised parameter's KEYWORD: ", convertCharsToStrings(info{i,1}) ) );
         end

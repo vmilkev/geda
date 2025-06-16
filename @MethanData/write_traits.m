@@ -1,16 +1,33 @@
 function write_traits( this, summary_table, ams_fnames, snf_fnames, used_sig_length )
 
-trait_data_file_1 = strcat("trait_v1_",...
+trait_data_file_1 = strcat("traits_geda_",...
     this.date_now,...
     "_robot_",...
     num2str(this.device),... % robot (device) id
     ".geda");
+
+if this.downsampl_res > 0 % in the case of downsampling
+    acf_file_ch4 = strcat("acf_ch4_",...
+        this.date_now,...
+        "_robot_",...
+        num2str(this.device),... % robot (device) id
+        ".txt");
+    acf_file_co2 = strcat("acf_co2_",...
+        this.date_now,...
+        "_robot_",...
+        num2str(this.device),... % robot (device) id
+        ".txt");
+end
 
 if this.outpath ~= ""
     if ~exist(this.outpath, 'dir')
         mkdir(this.outpath);
     end
     trait_data_file_1 = strcat(this.outpath,trait_data_file_1);
+    if this.downsampl_res > 0
+        acf_file_ch4 = strcat(this.outpath,acf_file_ch4);
+        acf_file_co2 = strcat(this.outpath,acf_file_co2);
+    end
 end
 
 if exist(trait_data_file_1, 'file')
@@ -27,11 +44,19 @@ ams_ts = this.get_from_binary( ams_fnames{1} ); % loading AMS TS with 1 sec freq
 
 Fts = this.sampl_res_const;
 Fact = this.deltaT_original;
+
+if this.downsampl_res > 0 % in the case of downsampling
+    Fact = this.downsampl_res; % downsampling frequency
+    all_acf_ch4 = {}; % temporaly collector of acf for each visit, CH4
+    all_acf_co2 = {}; % temporaly collector of acf for each visit, CO2
+end
+
 i_signal = 0;
-bkg_outl_const = -0.1; % background outlier
-obs_outl_const = 1.5; % observations outlier in statistic: data./(3*std(data)) > obs_outl_const -> is outlier if TRUE;
-wlen_const = 10; % SSA window, sec
-explvar_const = 90;
+bkg_outl_const = this.bkg_outl_const; % background outlier upper bound
+obs_outl_const = this.obs_outl_const; % observations outlier in statistic: data./(3*std(data)) > obs_outl_const => is outlier (if expression is TRUE);
+wlen_const = this.wlen_const; % SSA window for denoising, sec
+explvar_const = this.explvar_const; % amount of variance a denoised data should cover/explain
+excl_const = 0.1;
 
 use_cols = true(1,1); % preallocating logical array indicating gas cols used for making traits
 rlb_list = find( summary_table(:,7) == 1 ); % only reliable data
@@ -97,7 +122,7 @@ for i = 1:size(rlb_list,1) % loop over the number of processed signals
     end
 
     clear gas_bkg
-    
+
     Hgas = gas(~mask_bkg,:);
     Hid = id(~mask_bkg,:);
     Htime = t(~mask_bkg,:);
@@ -115,9 +140,9 @@ for i = 1:size(rlb_list,1) % loop over the number of processed signals
     end
 
     clear H1 f
-    
+
     u = unique(Hid);
-    
+
     n_traits = numel(u);
     jstart = 1;
     if u(1) == 0
@@ -130,13 +155,22 @@ for i = 1:size(rlb_list,1) % loop over the number of processed signals
     tr_ids = zeros(n_traits,1);
     tr_time = strings(n_traits,1);
     background = zeros(n_traits,size(Hgas,2));
-    
+
     j2 = 0;
     for j = jstart:numel(u)
         animal = u(j);
         fnd_id = Hid == animal;
         anim_gas = Hgas(fnd_id,:);
+        
+        % excluded records bounds
+        n_records = size(anim_gas,1);
+        excl_1 = floor( n_records * excl_const );
+        if excl_1 == 0
+            continue;
+        end
+        anim_gas = anim_gas(excl_1:end, :);
         anim_time = Htime(fnd_id,:);
+        anim_time = anim_time(excl_1:end, :);
 
         t_duration = numel(anim_gas(:,1))*Fact/60.0; % duration in min
 
@@ -144,10 +178,21 @@ for i = 1:size(rlb_list,1) % loop over the number of processed signals
             continue;
         end
 
+        if this.downsampl_res > 0 % in the case of downsampling study
+            [acf_ch4, acflags_ch4] = autocorr( anim_gas(:,1), numel(anim_gas(:,1))-1 );
+            [acf_co2, acflags_co2] = autocorr( anim_gas(:,2), numel(anim_gas(:,2))-1 );
+            all_acf_ch4{j} = [acf_ch4, acflags_ch4];
+            all_acf_co2{j} = [acf_co2, acflags_co2];
+        end
+
         j2 = j2 + 1;
 
         for l = 1:size(Hgas,2)
-            traits(j2,l) = trapz( Fact, anim_gas(:,l) )/t_duration;
+            if this.trait_type == 1
+                traits(j2,l) = trapz( Fact, anim_gas(:,l) )/t_duration;
+            else
+                traits(j2,l) = mean( anim_gas(:,l) );
+            end
             background(j2,l) = bkg_val(l,1);
         end
 
@@ -164,11 +209,32 @@ for i = 1:size(rlb_list,1) % loop over the number of processed signals
         T.(i_name1) = traits(1:j2,i_gas);
         T.(i_name2) = background(1:j2,i_gas);
     end
-    
+    rbt(1:j2,1) = this.device;
+    snf(1:j2,1) = this.sniffer;
+    frm(1:j2,1) = this.farm;
+    T.("robot") = rbt;
+    T.("sniffer") = snf;
+    T.("farm") = frm;
+
     all_traits{i,1} = T;
 
-    clear T
+    clear T rbt snf frm
 
+end
+
+if this.downsampl_res > 0 % calculate ACF
+    
+    acf_ch4 = get_acf(all_acf_ch4);
+    acf_co2 = get_acf(all_acf_co2);
+    
+    clear all_acf_ch4 all_acf_co2
+    
+    writetable(acf_ch4,acf_file_ch4,'WriteMode','Append',...
+        'WriteVariableNames',true,'Delimiter',';',...
+        'QuoteStrings',true, 'FileType', 'text');
+    writetable(acf_co2,acf_file_co2,'WriteMode','Append',...
+        'WriteVariableNames',true,'Delimiter',';',...
+        'QuoteStrings',true, 'FileType', 'text');
 end
 
 writetable(vertcat(all_traits{:}),trait_data_file_1,'WriteMode','Append',...
@@ -184,19 +250,47 @@ this.make_report("dat", "Summary of LMM analysis of the processed data:", []);
 this.make_report("dat", strcat("        CH4 model: ", ch4{1,1}), []);
 this.make_report("dat", strcat("        num. observations per ID:  ", num2str(ch4{4,1}) ), []);
 this.make_report("dat", strcat("        fit quality, adjusted r^2: ", num2str(ch4{3,1}) ), []);
+this.make_report("dat", strcat("        random effect variance:    ", num2str(ch4{5,1}) ), []);
+this.make_report("dat", strcat("        residual variance:         ", num2str(ch4{6,1}) ), []);
 this.make_report("dat", strcat("        var_id/(var_id+var_err):   ", num2str(ch4{2,1}) ), []);
 this.make_report("dat", " ", []);
 this.make_report("dat", strcat("        CO2 model: ", co2{1,1}), []);
 this.make_report("dat", strcat("        num. observations per ID:  ", num2str(co2{4,1}) ), []);
 this.make_report("dat", strcat("        fit quality, adjusted r^2: ", num2str(co2{3,1}) ), []);
+this.make_report("dat", strcat("        random effect variance:    ", num2str(co2{5,1}) ), []);
+this.make_report("dat", strcat("        residual variance:         ", num2str(co2{6,1}) ), []);
 this.make_report("dat", strcat("        var_id/(var_id+var_err):   ", num2str(co2{2,1}) ), []);
 this.make_report("dat", " ", []);
+if this.downsampl_res > 0
+    this.make_report("dat", "NOTE: applied downsampling, [sec]: ", this.downsampl_res);
+    this.make_report("dat", " ", []);
+end
 
 clear ch4 co2
 
 % ---------------------------------------------------------------
 % Nested Functions
 % ---------------------------------------------------------------
+    function acf = get_acf(all_acf)
+        % calculate ACF averaged over all visits/individuals
+        max_lag = 0;
+        max_lag_i = 1;
+        for ii = 1:size(all_acf,2)
+            if max_lag < numel(all_acf{1, ii}(:,1))
+                max_lag = numel(all_acf{1, ii}(:,1));
+                max_lag_i = ii;
+            end
+        end
+        mean_acf = zeros(max_lag,1);
+        num_el = zeros(max_lag,1);
+        for ii = 1:size(all_acf,2)
+            mean_acf( 1:numel(all_acf{1, ii}(:,1)),1 ) = mean_acf( 1:numel(all_acf{1, ii}(:,1)),1 ) + all_acf{1, ii}(:,1);
+            num_el( 1:numel(all_acf{1, ii}(:,1)),1 ) = num_el( 1:numel(all_acf{1, ii}(:,1)),1 ) + 1;
+        end
+        mean_acf = mean_acf ./ num_el;
+        acf = table(mean_acf, all_acf{1, max_lag_i}(:,2), 'VariableNames', {'acf','lags'});
+    end
+
     function [flt_t, flt_id, flt_gas] = filter_baddata(time, ids, gases)
         mask = true(size(gases,1),1);
         for igas = 1:size(gases,2) % loop over gas types
@@ -283,15 +377,15 @@ clear ch4 co2
         F = V;
     end
 
-    function [res_ch4, res_co2] = fit_model(trait_list, used_sig_len)           
-        
+    function [res_ch4, res_co2] = fit_model(trait_list, used_sig_len)
+
         tr = vertcat(trait_list{:});
         clear trait_list
-        
+
         u_tr = unique(tr.id);
         obs_per_id = size(tr,1)/numel(u_tr);
-        
-        tn = convertTo(datetime(tr.time), 'posixtime'); 
+
+        tn = convertTo(datetime(tr.time), 'posixtime');
         tn = round((tn - min(tn) + 1)./60);
         tc = zeros( size(tn) );
         h = used_sig_len; % used sig. length
@@ -304,34 +398,40 @@ clear ch4 co2
             rel_time = floor((tn(i_tr,1) - floor(tn(i_tr,1)/day)*day)/period);
             tc(i_tr,1) = rel_time + 1;
         end
-        
+
         tday = datetime(tr.time);
         tday.Format = 'dd-MMM-yyyy';
         tday = categorical(string(tday));
-        
+
         tr.("period") = tc;
         tr.("day") = tday;
-                
-        model_ch4 = 'gas_1 ~ 1 + period + day + bkg_1 + (1|id)';    
+
+        model_ch4 = 'gas_1 ~ 1 + period + day + bkg_1 + (1|id)';
         model_co2 = 'gas_2 ~ 1 + period + day + bkg_2 + (1|id)';
-        
+
         lme = fitlme(tr, model_ch4);
+        %[B,Bnames] = randomEffects(lme);
         [psi,mse] = covarianceParameters(lme);
-        h_ch4 = psi{1}/(psi{1}+mse); % repeatability/heritability
+        h_ch4 = psi{1}/(psi{1}+mse); % repeatability
         r_sqv_ch4 = lme.Rsquared.Adjusted;
         res_ch4{1,1} = model_ch4;
         res_ch4{2,1} = h_ch4;
         res_ch4{3,1} = r_sqv_ch4;
         res_ch4{4,1} = obs_per_id;
-        
+        res_ch4{5,1} = psi{1}; % animal variance
+        res_ch4{6,1} = mse; % residual variance
+
         lme2 = fitlme(tr, model_co2);
+        %[B2,Bnames2] = randomEffects(lme2);
         [psi,mse] = covarianceParameters(lme2);
         h_co2 = psi{1}/(psi{1}+mse);
         r_sqv_co2 = lme2.Rsquared.Adjusted;
         res_co2{1,1} = model_co2;
         res_co2{2,1} = h_co2;
         res_co2{3,1} = r_sqv_co2;
-        res_co2{4,1} = obs_per_id;       
+        res_co2{4,1} = obs_per_id;
+        res_co2{5,1} = psi{1}; % animal variance
+        res_co2{6,1} = mse; % residual variance
     end
 % ---------------------------------------------------------------
 

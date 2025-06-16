@@ -215,6 +215,12 @@ end
 elps_time = toc;
 
 m.make_report("dat", "Elapsed time of calculating traits and writing into files, sec:", elps_time);
+m.make_report("dat", " ", []);
+print_type = "The produced trait is the gas emission intensity (based on every AMS visit calculations), [ppm/min].";
+if m.trait_type == 2
+    print_type = "The produced trait is the mean gas emission per visit (averaged over number of observations in an AMS visit), [ppm].";
+end
+m.make_report("dat", print_type, []);
 
 %% Finalize: delete .bin files and close the log file
 

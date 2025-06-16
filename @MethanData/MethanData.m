@@ -20,17 +20,27 @@ classdef MethanData < handle
         f_hdl % ........................................... Report file handler
         % .................................................
         sampl_res_const = 0 % ............................. Minimal resampling resolution of data, [sec]
+        downsampl_res = 0 % ............................... Resampling resolution of data used for study the effect of downsampling, [sec]
         deltaT_original % ................................. Actual sampling frequency of the Sniffer data file
         signal_gap_limit = 120 % .......................... Minimal allowed sniffer signal gap, [sec]
         % .................................................
         outpath % ......................................... Output directory for resulting files
+        % ................................................. Outliers filtering:
+        bkg_outl_const = -0.1 % ........................... background outlier upper bound
+        obs_outl_const = 1.5 % ............................ observations outlier in statistic: data./(3*std(data)) > obs_outl_const => is outlier (if expression is TRUE);
+        wlen_const = 10 % ................................. SSA window for denoising, sec
+        explvar_const = 90 % .............................. amount of variance a denoised data should cover/explain
     end
     properties (Access = public)
-        device
+        device % robot id, assumed numeric type (double) !!!
+        sniffer = "none" % sniffer id, assume striung
+        farm = "none" % farm id, assume string
         is_ssa = true;
         ssa_wnd = 200;
         ssa_eigval = 5;
         date_now = ""; % day-time without sopaces and colomns in between
+        % .................................................
+        trait_type = 2 % .................................. Determines which type of trait to output: 1 (default) => time averagined value; 2 => averaged over num of observations
     end
 
     % PUBLIK INTERFACE

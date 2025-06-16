@@ -1,20 +1,34 @@
 
 clear;
 
-traits1 = {"trait_v1_05-Mar-2025_19-58-33_robot_101.geda",...
-          "trait_v1_05-Mar-2025_19-59-09_robot_102.geda",...
-          "trait_v1_05-Mar-2025_19-59-44_robot_103.geda"};
+% 1 sec
+traits1 = {"trait_v1_21-May-2025_21-23-35_robot_101.geda",...
+          "trait_v1_21-May-2025_21-24-42_robot_102.geda",...
+          "trait_v1_21-May-2025_21-25-18_robot_103.geda"};
+
 robots1 = [101, 102, 103];
 
-traits4 = {"trait_v1_05-Mar-2025_15-31-42_robot_1.geda",...
-           "trait_v1_05-Mar-2025_15-36-21_robot_2.geda",...
-           "trait_v1_05-Mar-2025_15-41-47_robot_3.geda"};
+% -----------------------------------------------------------
+traits4 = {"trait_v1_06-Apr-2025_20-00-24_robot_1.geda",...
+           "trait_v1_06-Apr-2025_20-04-53_robot_2.geda",...
+           "trait_v1_06-Apr-2025_20-10-09_robot_3.geda"};
 robots4 = [1, 2, 3];
 
+% -----------------------------------------------------------
 traits6 = {"trait_v1_05-Mar-2025_19-49-23_robot_101.geda"};
 robots6 = [101];
 
+% -----------------------------------------------------------
+
 [tr] = fit_model(traits1, robots1, 1);
+
+% load tr0.mat
+% f = find(tr.id(1:end-0) == tr0.id(1:end-15));
+% d1 = mean(( tr0.gas_1(f) - tr.gas_1(f) )./( tr0.gas_1(f) + mean(tr0.gas_1(f))*0.0001 ) )
+% d2 = mean(( tr0.gas_2(f) - tr.gas_2(f) )./ tr0.gas_2(f) )
+
+% corr(tr0.gas_1(f), tr.gas_1(f))
+% corr(tr0.gas_2(f), tr.gas_2(f))
 
 disp("-----------------------------------------");
 
@@ -57,27 +71,38 @@ tr.("day") = tday;
 % tr(f,:) = [];
 
 if size(robot_list,2) > 1
-    model1 = 'gas_1 ~ 1 + period + day + robot * bkg_1 * period + (1|id)';    
-    model2 = 'gas_2 ~ 1 + period + day + robot * bkg_2 * period + (1|id)';
+    % model1 = 'gas_1 ~ 1 + period + day + robot * bkg_1 * period + (1|id)';    
+    % model2 = 'gas_2 ~ 1 + period + day + robot * bkg_2 * period + (1|id)';
+    model1 = 'gas_1 ~ 1 + period + day + robot * period + bkg_1 + (1|id)';    
+    model2 = 'gas_2 ~ 1 + period + day + robot * period + bkg_2 + (1|id)';
 else
     model1 = 'gas_1 ~ 1 + period + day + bkg_1 + (1|id)';    
     model2 = 'gas_2 ~ 1 + period + day + bkg_2 + (1|id)';
 end
 
-lme = fitlme(tr, model1);
+lme = fitlme(tr, model1)
 [psi,mse] = covarianceParameters(lme);
 hco4 = psi{1}/(psi{1}+mse); % repeatability/heritability
 disp(["sigmma", "err", "h", "r^2", "n_obs_id"]);
 disp([psi{1}, mse, psi{1}/(psi{1}+mse), lme.Rsquared.Adjusted, obs_per_id]);
 
+% disp("CH4:");
+% disp(["sigmma", "err"]);
+% disp([psi{1}, mse]);
+
 lme2 = fitlme(tr, model2);
 [psi,mse] = covarianceParameters(lme2);
 %disp([psi{1}, mse, psi{1}/(psi{1}+mse), lme2.Rsquared.Adjusted]);
+
+% disp("CO2:");
+% disp(["sigmma", "err"]);
+% disp([psi{1}, mse]);
 
 if fig_id == 0
     return;
 end
 
+%set(0,'DefaultFigureVisible','off');
 figure(fig_id);
 clf;
 set(gcf,'Color','white');

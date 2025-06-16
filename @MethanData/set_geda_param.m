@@ -74,6 +74,44 @@ if ~isempty(this.geda_param.outpath)
     this.outpath = this.geda_param.outpath;
 end
 
+if ~isempty(this.geda_param.trait)
+    this.trait_type = this.geda_param.trait;
+    if this.trait_type ~= 1 && this.trait_type ~= 2
+        this.make_report("dat", "WARNING: Parameter TRAIT cannot have other values than 1 or 2!", []);
+        return;
+    end
+end
+
+this.downsampl_res = 0;
+if ~isempty(this.geda_param.dwnsampl)
+    this.downsampl_res = this.geda_param.dwnsampl;
+    if this.downsampl_res < 0
+        this.make_report("dat", "WARNING: Parameter DWNSAMPLING cannot have values less than 0!", []);
+        return;
+    end
+end
+
+if ~isempty(this.geda_param.filtering)
+    if size(this.geda_param.filtering,1) ~= 2
+        this.make_report("dat", "WARNING: Parameter FILTERING requires two input values separated by comma!", []);
+        return;
+    end
+    if this.geda_param.filtering(1,1) < 0.0 || this.geda_param.filtering(2,1) < 0.0
+        this.make_report("dat", "WARNING: Parameter FILTERING cannot have values less than 0!", []);
+        return;
+    end
+    this.obs_outl_const = this.geda_param.filtering(1,1);
+    this.explvar_const = this.geda_param.filtering(2,1);
+end
+
+if ~isempty(this.geda_param.snif_id)
+    this.sniffer = this.geda_param.snif_id;
+end
+
+if ~isempty(this.geda_param.farm_id)
+    this.farm = this.geda_param.farm_id;
+end
+
 end
 
 

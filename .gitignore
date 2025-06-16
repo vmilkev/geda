@@ -1,4 +1,6 @@
 test/
+data_overview/
+geda_results/
 aligned_*
 ids_list*
 skew_list*
