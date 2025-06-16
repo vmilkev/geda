@@ -40,7 +40,7 @@ classdef MethanData < handle
         ssa_eigval = 5;
         date_now = ""; % day-time without sopaces and colomns in between
         % .................................................
-        trait_type = 2 % .................................. Determines which type of trait to output: 1 (default) => time averagined value; 2 => averaged over num of observations
+        trait_type = 1 % .................................. Determines which type of trait to output: 1 (default) => time averagined value; 2 => averaged over num of observations
     end
 
     % PUBLIK INTERFACE

@@ -1,4 +1,5 @@
 test/
+compiled/
 data_overview/
 geda_results/
 aligned_*
