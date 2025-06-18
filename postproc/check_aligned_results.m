@@ -1,6 +1,10 @@
 
 clear;
 
+
+main("test/31563_2/param_31563_R1_2021_4.txt");
+%%
+
 p_file1 = "test/param_21834.txt"; % all good results
 p_file1_2 = "test/param_21834_2.txt";
 p_file1_3 = "test/param_21834_3.txt";

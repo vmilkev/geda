@@ -33,6 +33,12 @@ robots = this.get_mesr_robot(); % do not extract all robots, extract only the on
 
 for i = 1:numel(robots)
     [rows,~] = find( device(:,1) == robots(i) );
+
+    if isempty(rows)
+        this.make_report( "dat", strcat("WARNING: The program cannot find any records in the AMS file corresponding to the robot ", num2str(int32(robots(i))), "." ), [] );
+        this.make_report( "dat", "         Possibly a wrong robot ID is used in the parameter file.", [] );
+    end
+
     lely_map( robots(i) ) = LelyData(rows,:);
     
     % Transform lely_map to numerical data map
@@ -75,6 +81,10 @@ for i = 1:numel(robots)
             this.start_lely_stime = arr(i2,2);
             break;
         end
+    end
+
+    if isempty(this.start_lely_stime)
+        error("Variable start_lely_stime is empty. Check wornings in the log file for possible explanation.");
     end
 
 end
