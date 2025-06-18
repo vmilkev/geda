@@ -32,11 +32,11 @@ function write_alignment_results( this, summary_table, ams_fnames, snf_fnames )
     write_header = true;
 
     for i = 1:size(summary_table,1) % loop over the number of processed signals
-
+        
         if ~summary_table(i,7) % only for reliable data
             continue;
         end
-        
+
         if summary_table(i,6) ~= i_signal % only when we change the dataset
             i_signal = summary_table(i,6);
             snf_ts = this.get_from_binary(snf_fnames{i_signal,1}); % load Sniffer TS with 1 sec sampling frequency

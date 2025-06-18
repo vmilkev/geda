@@ -23,8 +23,10 @@ end
 right_cols =  dat(:,col) > 0.0 ;
 dat2 = dat( right_cols,: ); % temporal solution; this should not be here
 
-if ( isempty( dat2 ) )
-    A = dat;
+if ( isempty( dat2 ) || size(dat2,1) == 1 )
+    %A = dat;
+    A(:,1) = dat(:,1);
+    A(:,2) = dat(:,col);
     return;
 end
 

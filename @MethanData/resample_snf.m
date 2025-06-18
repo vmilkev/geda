@@ -10,14 +10,14 @@ function [ d3, d4, data_range_hours, sampl_frq_median, sampl_frq_min, sampl_frq_
     samples = int64( ( d(end,1)-d(1,1) )*tosec ); % the range
 
     if (samples <= 0)
-        this.make_report("dat", "WARNING in extend(): The sniffers data range is negative or equals 0!", []);
+        this.make_report("dat", "WARNING: The sniffers data range is negative or equals 0!", []);
         return;
     end
 
     this.deltaT_original = median((d(2:end,1)-d(1:end-1,1))*tosec); % actual sampling frequency of the data
     
     if (this.deltaT_original <= 0)
-        this.make_report("dat", "WARNING in extend(): The median sampling frequency of sniffers data is negative or equals 0!", []);
+        this.make_report("dat", "WARNING: The median sampling frequency of sniffers data is negative or equals 0!", []);
         return;
     end
 

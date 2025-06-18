@@ -1,6 +1,6 @@
 function [accuracy, corrected_rlb] = get_rlb_accuracy( this, rlb_estimates )
 
-    limit_const = 95040; % 24 hours + 10%, in [sec]
+    limit_const = 47000; % 12 hours + 10%, in [sec]
     f0 = find ( abs(rlb_estimates(:,1)) > limit_const ); % supposed to be the reference false => 0
     f1 = find ( abs(rlb_estimates(:,1)) <= limit_const ); % supposed to be the reference true => 1
     

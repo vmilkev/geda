@@ -406,8 +406,12 @@ clear ch4 co2
         tr.("period") = tc;
         tr.("day") = tday;
 
-        model_ch4 = 'gas_1 ~ 1 + period + day + bkg_1 + (1|id)';
-        model_co2 = 'gas_2 ~ 1 + period + day + bkg_2 + (1|id)';
+        tr(:,{'robot','sniffer', 'farm'}) = [];
+
+        % model_ch4 = 'gas_1 ~ 1 + period + day + bkg_1 + (1|id)';
+        % model_co2 = 'gas_2 ~ 1 + period + day + bkg_2 + (1|id)';
+        model_ch4 = 'gas_1 ~ 1 + period + bkg_1 + (1|id)';
+        model_co2 = 'gas_2 ~ 1 + period + bkg_2 + (1|id)';
 
         lme = fitlme(tr, model_ch4);
         %[B,Bnames] = randomEffects(lme);

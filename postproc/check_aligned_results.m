@@ -2,7 +2,7 @@
 clear;
 
 
-main("test/31563_2/param_31563_R1_2021_4.txt");
+main("test/56593/param_56593_R6_2022_7.txt");
 %%
 
 p_file1 = "test/param_21834.txt"; % all good results
@@ -33,15 +33,15 @@ p_file17 = "test/param_84544_R7_2023_10.txt"; % partly reliable; moderately long
 % main(p_file6);
 
 main(p_file1);
-main(p_file1_2);
-main(p_file1_3);
+% main(p_file1_2);
+% main(p_file1_3);
 
 % main(p_file4);
 % main(p_file4_2);
 % main(p_file4_3);
 
 %%
-res = read_aligned("trait_v1_25-Feb-2025_20-06-30_robot_4.geda"); % check results
+res = read_aligned("sniffer_R5_2022_7/aligned_18-Jun-2025_14-18-41_robot_5.geda"); % check results
 %res = read_aligned("aligned_init_sniffer_4.txt"); % check results
 %res = read_aligned("aligned_init_sniffer_2.txt"); % check results
 

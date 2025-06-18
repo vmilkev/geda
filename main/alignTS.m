@@ -149,6 +149,11 @@ clear opt_res adj_table rlb_res snif_len
  ams_dates,...
  snifer_dates] = m.mf_detection(msr_ts, lely_ts, A, sig_length, m.is_ssa, true);
 
+%% % if data too small, some data sets will be omitted, hence, will be some zerros in the column
+
+find_empty = find(adj_table(:,6) ~= 0);
+adj_table = adj_table(find_empty,:);
+
 %% Reliability estimation of performed detection
 
 [ rlb_res, ~, ~ ] = m.detect_reliability(adj_table(:,1), 1); % use CalinskiHarabasz criterion for clustering optimization
